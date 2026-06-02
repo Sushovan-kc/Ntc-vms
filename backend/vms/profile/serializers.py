@@ -51,6 +51,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class userProfileSerializer(serializers.ModelSerializer):
     username=serializers.ReadOnlyField(source='user.username')
+    approved_by=serializers.ReadOnlyField(source='approved_by.user.username')
     class Meta:
         model = Profile
         fields = ['user','username', 'role', 'role_approved', 'phone_number', 'branch', 'approved_by']
