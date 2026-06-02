@@ -1,0 +1,31 @@
+# Virtual Environments (Python)
+venv_vms/
+vms_env/
+.venv/
+venv/
+env/
+ENV/
+
+# Python caching artifacts
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Django sensitive settings & media
+.env
+db.sqlite3
+/media/
+/staticfiles/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
