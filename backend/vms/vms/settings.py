@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from datetime import timedelta
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,6 +45,8 @@ INSTALLED_APPS = [
     'profile',
     'branch',
     'core',
+    'fleet',
+    'driver',
 ]
 
 MIDDLEWARE = [
@@ -152,3 +155,9 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# The actual folder on your server machine where images are saved
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# The URL prefix the frontend uses to request the images
+MEDIA_URL = '/media/'

@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import NotFound
 from .adminserializer import AdminUserProfileManagementSerializer 
+from rest_framework.pagination import PageNumberPagination
 # Create your views here.
 
 class RegisterUserView(APIView):
@@ -90,12 +91,21 @@ class UserProfileDetailView(ModelViewSet):
         return profile
     
 
+class AdminProfileTablePagination(PageNumberPagination):
+    """Controls how many user records load at once in your frontend dashboard."""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class AdminProfileManagementViewSet(ModelViewSet):
     """Admin-only viewset to view, update, list, and delete any user profile."""
     permission_classes = [IsBranchAdmin] # Strictly restricts to staff/admins
     queryset = Profile.objects.all().select_related('user', 'approved_by__user')
     filter_backends = [BranchFilterBackend]
     serializer_class = AdminUserProfileManagementSerializer
+    pagination_class = AdminProfileTablePagination
+
+    queryset = Profile.objects.all().select_related('user', 'approved_by__user')
 
     def update(self, request, *args, **kwargs):
         # Override update to pass the request

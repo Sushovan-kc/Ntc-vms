@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Profile
 from django.contrib.auth.models import User
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
 
 class AdminUserProfileManagementSerializer(serializers.ModelSerializer):
@@ -20,32 +21,75 @@ class AdminUserProfileManagementSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'approved_by']
 
+    def validate(self, data):
+        """Prevents duplicate usernames or emails during creation and updates."""
+        user_data = data.get('user', {})
+        current_user = self.instance.user if self.instance else None
+
+        if 'username' in user_data:
+            username = user_data['username']
+            if User.objects.filter(username=username).exclude(id=current_user.id if current_user else None).exists():
+                raise ValidationError({'username': 'This username is already taken.'})
+
+        if 'email' in user_data:
+            email = user_data['email']
+            if User.objects.filter(email=email).exclude(id=current_user.id if current_user else None).exists():
+                raise ValidationError({'email': 'This email is already taken.'})
+        return data
+    
+
+    def create(self, validated_data):
+        """Handles admin-side creation (POST) of both User and Profile records."""
+        user_data = validated_data.pop('user', {})
+        username = user_data.get('username')
+        email = user_data.get('email')
+
+        if not username or not email:
+            raise serializers.ValidationError({"user": "Username and email fields are required."})
+
+        request = self.context.get('request')
+
+        with transaction.atomic():
+            # Create core Django user with a randomized secure temporary password
+            random_password = User.objects.make_random_password()
+            user_instance = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=user_data.get('first_name', ''),
+                last_name=user_data.get('last_name', ''),
+                password=random_password
+            )
+
+            # Auto-assign approving admin if pre-approved
+            if validated_data.get('role_approved') is True and request and request.user:
+                validated_data['approved_by'] = getattr(request.user, 'profile', None)
+
+            # Create Profile record linked to the new user
+            profile_instance = Profile.objects.create(user=user_instance, **validated_data)
+            
+        return profile_instance
+
     def update(self, instance, validated_data):
-        # Extract the nested user data dictionary if present
+        """Handles partial or full updates (PUT/PATCH) safely."""
         user_data = validated_data.pop('user', None)
         
         with transaction.atomic():
-            # 1. Update only the core User fields that were sent in the request
+            # Update only provided User fields
             if user_data:
                 user_instance = instance.user
-                if 'username' in user_data:
-                    user_instance.username = user_data['username']
-                if 'email' in user_data:
-                    user_instance.email = user_data['email']
-                if 'first_name' in user_data:
-                    user_instance.first_name = user_data['first_name']
-                if 'last_name' in user_data:
-                    user_instance.last_name = user_data['last_name']
+                for attr, value in user_data.items():
+                    setattr(user_instance, attr, value)
                 user_instance.save()
             
-            # 2. Track which admin is approving this profile on the fly
+            # Track profile approvals dynamically
             request = self.context.get('request')
             if validated_data.get('role_approved') is True and not instance.role_approved:
                 if request and request.user:
-                    admin_profile = getattr(request.user, 'profile', None)
-                    validated_data['approved_by'] = admin_profile
+                    validated_data['approved_by'] = getattr(request.user, 'profile', None)
 
-            # 3. Update only the Profile fields that were sent in the request
+            # Update Profile fields
             instance = super().update(instance, validated_data)
             
         return instance
+    
+    
