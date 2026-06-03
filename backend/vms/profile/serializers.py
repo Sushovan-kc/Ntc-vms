@@ -55,3 +55,42 @@ class userProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['user','username', 'role', 'role_approved', 'phone_number', 'branch', 'approved_by']
+
+
+class UserProfileDetailSerializer(serializers.ModelSerializer):
+    # Dotted source fields mapped from the related User model
+    username = serializers.ReadOnlyField(source='user.username')
+    email = serializers.EmailField(source='user.email',allow_blank=True, required=False)
+    first_name = serializers.CharField(source='user.first_name', allow_blank=True, required=False)
+    last_name = serializers.CharField(source='user.last_name', allow_blank=True, required=False)
+    approved_by = serializers.ReadOnlyField(source='approved_by.user.username')
+
+    class Meta:
+        model = Profile
+        fields = ['user', 'username', 'email', 'first_name', 'last_name', 'role', 'role_approved', 'phone_number', 'branch', 'approved_by']
+        
+        # Security: Prevent standard users from escalating privileges or changing groups
+        read_only_fields = ['user', 'role', 'role_approved', 'branch', 'approved_by']
+
+    def update(self, instance, validated_data):
+        # 1. DRF automatically nests 'first_name', 'last_name', and 'email' 
+        # inside a 'user' dictionary key because of their 'user.field' sources.
+        user_data = validated_data.pop('user', None)
+        
+        # 2. Wrap operations inside an atomic block to prevent partial database corruption
+        with transaction.atomic():
+            if user_data:
+                user_instance = instance.user
+                # Update User fields if they were explicitly provided in the payload
+                if 'email' in user_data:
+                    user_instance.email = user_data['email']
+                if 'first_name' in user_data:
+                    user_instance.first_name = user_data['first_name']
+                if 'last_name' in user_data:
+                    user_instance.last_name = user_data['last_name']
+                user_instance.save()
+            
+            # 3. Save standard profile table attributes (like phone_number)
+            instance = super().update(instance, validated_data)
+            
+        return instance
