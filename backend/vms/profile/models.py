@@ -28,15 +28,4 @@ class Profile(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.role}"
     
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        default_role = Profile.ROLE.SUPERADMIN if instance.is_superuser else Profile.ROLE.NOT_ASSIGNED
-        
-        Profile.objects.get_or_create(
-            user=instance,
-            defaults={
-                'role': default_role,
-                'role_approved': instance.is_superuser 
-            }
-        )
+

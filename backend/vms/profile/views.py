@@ -11,22 +11,27 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import NotFound
 from .adminserializer import AdminUserProfileManagementSerializer 
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import CreateAPIView
 # Create your views here.
 
-class RegisterUserView(APIView):
+class RegisterUserView(CreateAPIView):
     """API view to handle user registration requests."""
-    # Allow any anonymous guest on the frontend to sign up
     permission_classes = [AllowAny]
+    serializer_class = UserRegistrationSerializer
 
-    def post(self, request, *args, **kwargs):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Registration successful. Awaiting system admin role approval."}, 
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def create(self, request, *args, **kwargs):
+        """
+        Overriding create allows us to provide your custom 
+        success message while maintaining generic performance.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) # Automatically throws 400 Bad Request if invalid
+        self.perform_create(serializer)
+        
+        return Response(
+            {"message": "Registration successful. Awaiting system admin role approval."}, 
+            status=status.HTTP_201_CREATED
+        )
     
 class UserProfileViewSet(ModelViewSet):
     """API viewset to handle user profile operations."""

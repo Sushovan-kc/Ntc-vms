@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,18 +11,29 @@ from .serializers import VehicleSerializer
 from .models import Vehicle
 
 # Create your views here.
-class Addnewvehicle(APIView):
+class Addnewvehicle(CreateAPIView):
     permission_classes = [IsAuthenticated, IsBranchAdmin]
-    backend_filters = [BranchFilterBackend]
-    def post(self, request, *args, **kwargs):
-        serializer = VehicleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Vehicle added successfully."}, 
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer_class = VehicleSerializer
+    queryset = Vehicle.objects.all()
+
+    def perform_create(self, serializer):
+        """
+        Intercepts creation step to attach the admin's branch context securely.
+        """
+        serializer.save(branch=self.request.user.profile.branch)
+
+    def create(self, request, *args, **kwargs):
+        """
+        Overrides to return your custom success text message payload.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) # Automatically returns 400 JSON on error
+        self.perform_create(serializer)
+        
+        return Response(
+            {"message": "Vehicle added successfully."}, 
+            status=status.HTTP_201_CREATED
+        )
 
 
 class VehicleListView(ModelViewSet):
@@ -45,4 +57,12 @@ class VehicleListView(ModelViewSet):
         # 5. Serialize and return the filtered vehicles
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class VehicleAssignView(ModelViewSet):
+    queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+    permission_classes = [IsAuthenticated, IsBranchAdmin]
+    filter_backends = [BranchFilterBackend]
+
     

@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/userprofile/', include('profile.urls')),
     path('api/vehicles/', include('fleet.urls')),
+    path('api/driver/', include('driver.urls')),
 ]

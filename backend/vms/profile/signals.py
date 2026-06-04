@@ -2,14 +2,26 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Profile
 from driver.models import DriverProfile as Driver
+from django.contrib.auth.models import User
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Signal to automatically create a Profile instance whenever a new User is created."""
+    if created:
+        default_role = Profile.ROLE.SUPERADMIN if instance.is_superuser else Profile.ROLE.NOT_ASSIGNED
+        
+        Profile.objects.get_or_create(
+            user=instance,
+            defaults={
+                'role': default_role,
+                'role_approved': instance.is_superuser 
+            }
+        )
 
 @receiver(post_save, sender=Profile)
 def sync_driver_profile(sender, instance, created, **kwargs):
-    # TEMPORARY DEBUG PRINTS: Look at your terminal console when saving a user!
-    print("====== SIGNAL TRIGGERED ======")
-    print(f"User: {instance.user.username}")
-    print(f"Current Role in DB: '{instance.role}'")
-    print(f"Is Role Approved: {instance.role_approved}")
+    """Signal to create or delete a DriverProfile based on the Profile's role and approval status."""
     
     if instance.role == Profile.ROLE.DRIVER and instance.role_approved:
         print("-> Condition MET: Creating/Getting Driver row.")
