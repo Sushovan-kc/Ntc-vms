@@ -96,11 +96,7 @@ class UserProfileDetailView(ModelViewSet):
         return profile
     
 
-class AdminProfileTablePagination(PageNumberPagination):
-    """Controls how many user records load at once in your frontend dashboard."""
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
+
 
 class AdminProfileManagementViewSet(ModelViewSet):
     """Admin-only viewset to view, update, list, and delete any user profile."""
