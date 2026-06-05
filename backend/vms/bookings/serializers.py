@@ -47,21 +47,6 @@ class BookingApprovalSerializer(serializers.ModelSerializer):
         if instance.status == Booking.BookingStatus.APPROVED:
             instance.approved_by = admin_user
             
-            # if instance.vehicle:
-            #     instance.assigned_vehicle = instance.vehicle
-                
-            #     # Check if the vehicle actually has a driver assigned in the database
-            #     if instance.vehicle.current_driver:
-            #         instance.assigned_driver = instance.vehicle.current_driver
-            #     else:
-            #         # Throw an error if you want to prevent approval of driverless vehicles
-            #         raise serializers.ValidationError(
-            #             {"status": f"The vehicle '{instance.vehicle}' has no driver assigned to it in the system."}
-            #         )
-            # else:
-            #     raise serializers.ValidationError(
-            #         {"status": "Cannot approve booking because no vehicle is attached to this request."}
-            #     )
             if validated_data.get('assigned_vehicle') is None and instance.vehicle is not None:
                 instance.assigned_vehicle = instance.vehicle
                 instance.assigned_driver = instance.vehicle.current_driver
@@ -70,5 +55,5 @@ class BookingApprovalSerializer(serializers.ModelSerializer):
         # 3. Save the instance directly to force the database update
         instance.save()
         return instance
-
     
+

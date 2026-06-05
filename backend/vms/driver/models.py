@@ -25,5 +25,6 @@ class DriverProfile(models.Model):
 
 
 class Dispatches(models.Model):
+    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='dispatches',null=True, blank=True)
     vehicle = models.ForeignKey('fleet.Vehicle', on_delete=models.CASCADE)
     booking=models.ForeignKey('bookings.Booking', on_delete=models.CASCADE)

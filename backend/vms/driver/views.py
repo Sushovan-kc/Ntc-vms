@@ -7,7 +7,7 @@ from .models import DriverProfile
 from .serializers import DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
-from core.permissions import IsBranchAdmin
+from core.permissions import IsBranchAdmin,IsDriver
 from core.filters import BranchFilterBackend
 from core.pagination import AdminProfileTablePagination
 from .serializers import AdminDriverProfileManagementSerializer
@@ -54,3 +54,11 @@ class AdminDriverProfileManagementViewSet(ModelViewSet):
         # Override update to pass the request
         kwargs['partial'] = True  # Allow partial updates (PATCH behavior on PUT)
         return super().update(request, *args, **kwargs)
+    
+
+class DriverVechicleInfoViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated,IsDriver]
+    serializer_class = DriverProfileFirstTimeSetupSerializer
+    queryset = DriverProfile.objects.all()
+
+# This viewset can be expanded in the future to allow drivers to update their vehicle assignment or other details as needed.
