@@ -15,7 +15,6 @@ class Vehicle(models.Model):
     year = models.IntegerField()
     license_plate = models.CharField(max_length=20, unique=True)
     approval_status = models.CharField(max_length=20, choices=status.choices, default=status.AVAILABLE)
-    created_at = models.DateTimeField(auto_now_add=True)
     branch = models.ForeignKey('branch.Branch', on_delete=models.SET_NULL, null=True, blank=True)
     current_driver =models.OneToOneField('driver.DriverProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='AssignedVehicle')
 

@@ -3,7 +3,7 @@ from .models import Vehicle, VehicleInfo
 # Register your models here.
 
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ('manufacturer', 'model', 'year', 'license_plate', 'approval_status', 'created_at')
+    list_display = ('manufacturer', 'model', 'year', 'license_plate', 'approval_status')
     search_fields = ('manufacturer', 'model', 'license_plate')
     list_filter = ['approval_status']
 
