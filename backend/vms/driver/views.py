@@ -3,8 +3,8 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import DriverProfile
-from .serializers import DriverProfileFirstTimeSetupSerializer
+from .models import Dispatches, DriverProfile
+from .serializers import DispatchSerializers, DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
@@ -83,4 +83,36 @@ class DriverVehicleInfoViewSet(ReadOnlyModelViewSet):
             )
             
         serializer = self.get_serializer(vehicle)
+        return Response(serializer.data)
+    
+class DispatchViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated, IsBranchAdmin]
+    serializer_class = DispatchSerializers
+    queryset = Dispatches.objects.all().select_related('driver__user__user', 'vehicle', 'booking__user')
+
+class DriverDispatchView(ModelViewSet):
+    permission_classes = [IsAuthenticated, IsDriver]
+    serializer_class = DispatchSerializers
+
+    def get_queryset(self):
+        """
+        Filters dispatches to only those assigned to the currently authenticated driver.
+        """
+        if not Dispatches.objects.filter(driver__id=self.request.user.profile.driver_profile.id).exists():
+            
+            return Dispatches.objects.none() 
+        else:
+            return Dispatches.objects.filter(driver__id=self.request.user.profile.driver_profile.id).select_related('driver__user__user', 'vehicle', 'booking__user')
+        
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        
+        if not queryset.exists():
+            return Response(
+                {"detail": "No dispatches found for your profile."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
