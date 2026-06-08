@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import DriverProfile
+from fleet.models import Vehicle
 
 class DriverProfileFirstTimeSetupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -76,3 +77,10 @@ class AdminDriverProfileManagementSerializer(serializers.ModelSerializer):
         
         # This super call now exclusively updates address, license info, status, or branch
         return super().update(instance, validated_data)
+
+
+class DriverVehicleInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Vehicle
+        fields=['manufacturer','model','year','license_plate','approval_status','current_driver']
+        read_only_fields=['manufacturer','model','year','license_plate','approval_status','current_driver']

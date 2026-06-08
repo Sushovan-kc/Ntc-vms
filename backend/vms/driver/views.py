@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +10,8 @@ from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
 from core.filters import BranchFilterBackend
 from core.pagination import AdminProfileTablePagination
-from .serializers import AdminDriverProfileManagementSerializer
+from fleet.models import Vehicle
+from .serializers import AdminDriverProfileManagementSerializer, DriverVehicleInfoSerializer
 
 
 # Create your views here.
@@ -56,9 +57,30 @@ class AdminDriverProfileManagementViewSet(ModelViewSet):
         return super().update(request, *args, **kwargs)
     
 
-class DriverVechicleInfoViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated,IsDriver]
-    serializer_class = DriverProfileFirstTimeSetupSerializer
-    queryset = DriverProfile.objects.all()
+class DriverVehicleInfoViewSet(ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated, IsDriver]
+    serializer_class = DriverVehicleInfoSerializer
 
-# This viewset can be expanded in the future to allow drivers to update their vehicle assignment or other details as needed.
+    def get_queryset(self):
+        """
+        Filters the vehicles to only return the one assigned 
+        to the currently authenticated driver.
+        """
+        # Assumes your DriverProfile model has a OneToOne relationship with Django's User model
+        return Vehicle.objects.filter(current_driver__id=self.request.user.profile.driver_profile.id)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Intercepts requests matching /vehicleinfo/<id>/ 
+        and always returns the logged-in driver's actual vehicle.
+        """
+        vehicle = self.get_queryset().first()
+        
+        if not vehicle:
+            return Response(
+                {"detail": "No vehicle assigned to your profile."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = self.get_serializer(vehicle)
+        return Response(serializer.data)
