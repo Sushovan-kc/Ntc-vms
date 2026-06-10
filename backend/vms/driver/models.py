@@ -43,3 +43,5 @@ class Dispatches(models.Model):
                 self.delete()
             return
        super().save(*args, **kwargs)
+
+#Need modification to delete the dispatch when the status is completed or cancelled
