@@ -110,4 +110,11 @@ class AvailableVehicleListView(APIView):
         serializer = VehicleSerializer(available_vehicles, many=True)
         return Response(serializer.data)
 
+
+class MyBookingsView(ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
     

@@ -67,7 +67,7 @@ class LoginView(APIView):
             'access': str(refresh.access_token),
             'username': user.username,
             'Role': role,
-            'is approved': is_approved,
+            'is_approved': is_approved,
             'branch': branch.id if branch is not None else None,
             'branch_name': branch.name if branch is not None else None,
         }, status=status.HTTP_200_OK)

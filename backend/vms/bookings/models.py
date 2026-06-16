@@ -108,3 +108,16 @@ class Booking(models.Model):
 
         if errors:
             raise ValidationError(errors)
+        
+    def save(self, *args, **kwargs):
+        if self.assigned_vehicle and self.assigned_vehicle.current_driver is not None:
+            driver=getattr(self.assigned_vehicle, 'current_driver', None)
+            if self.assigned_vehicle.current_driver.driver_status == 'AVAILABLE':
+                self.assigned_driver = driver
+            else:
+                self.assigned_driver = None
+        else:
+            # 3. Clear the driver if the assigned vehicle is removed entirely
+            self.assigned_driver = None
+
+        super().save(*args, **kwargs)

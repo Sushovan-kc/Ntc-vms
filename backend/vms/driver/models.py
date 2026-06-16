@@ -21,7 +21,14 @@ class DriverProfile(models.Model):
     
     def __str__(self):
         # Optimized to avoid double-join database hits if Profile holds identifying strings
-        return f"Driver: {self.user_id} - {self.driver_status}"
+        return f"Driver: {self.user.user.username} - {self.driver_status}"
+    
+    def save(self, *args, **kwargs):
+        if self.user.branch is not None:
+            self.branch = self.user.branch
+        else:
+            self.branch=None
+        super().save(*args, **kwargs)
 
 
 class Dispatches(models.Model):
