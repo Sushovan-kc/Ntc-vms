@@ -3,9 +3,11 @@ from .models import Booking
 from django.core.exceptions import ObjectDoesNotExist
 
 class BookingSerializer(serializers.ModelSerializer):
+    vehicle_manufacturer=serializers.CharField(source='vehicle.manufacturer', read_only=True)
+    vehicle_model=serializers.CharField(source='vehicle.model', read_only=True)
     class Meta:
         model = Booking
-        fields = ['id', 'user', 'vehicle', 'start_time', 'end_time', 'purpose', 'status', 'created_at', 'start_location', 'end_location', 'approved_by', 'assigned_vehicle', 'assigned_driver']
+        fields = ['id', 'user', 'vehicle_manufacturer', 'vehicle_model', 'start_time', 'end_time', 'purpose', 'status', 'created_at', 'start_location', 'end_location', 'approved_by', 'assigned_vehicle', 'assigned_driver']
         read_only_fields = ['id','user','status', 'created_at', 'approved_by', 'assigned_vehicle', 'assigned_driver']
         extra_kwargs = {
             'vehicle': {'required': False, 'allow_null': True},

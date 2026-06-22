@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Car, Fuel, Calendar, MapPin, ClipboardText } from 'lucide-react';
+import { Search, Filter, Car, Fuel, Calendar, MapPin, ClipboardCheck} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext'; // 🟢 Adjusted relative path to your context root
 import apiClient from '../../api/client'; // 🟢 Swapped raw fetch for your custom interceptor client
 
@@ -64,12 +64,20 @@ const MyRequests = () => {
         </div>
         
         {/* Dynamic New Request Call To Action Anchor Link */}
+        <div className="flex gap-3 flex-wrap">
         <Link 
-          to="/dashboard/request-vehicle" 
+          to="/dashboard/new-booking" 
           className="inline-flex items-center justify-center bg-ntc-blue text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:bg-ntc-blue-hover hover:shadow-lg active:scale-98 select-none"
         >
           New Booking Request
         </Link>
+        <Link
+            to="/dashboard"
+            className="inline-flex items-center justify-center bg-ntc-blue text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:bg-ntc-gray-hover hover:shadow-lg active:scale-98 select-none"
+          >
+            Back to Dashboard
+        </Link>
+        </div>
       </div>
 
       {/* Main Container Card Component Box */}
@@ -97,7 +105,7 @@ const MyRequests = () => {
               <thead>
                 <tr className="bg-ntc-gray border-b border-gray-200 text-ntc-dark-text font-bold text-xs uppercase tracking-wider">
                   <th className="p-4">Req ID</th>
-                  <th className="p-4">Vehicle Data ID</th>
+                  <th className="p-4">Vehicle</th>
                   <th className="p-4">Route Parameters</th>
                   <th className="p-4">Scheduled Window</th>
                   <th className="p-4">Purpose Context</th>
@@ -116,8 +124,8 @@ const MyRequests = () => {
                     {/* Vehicle Identity Assignment Key Column */}
                     <td className="p-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-ntc-dark-text font-medium text-xs rounded-md border border-gray-200">
-                        <Fuel size={12} className="text-ntc-muted" />
-                        Vehicle Ref: {req.vehicle || 'Auto Allocating'}
+                        <Car size={12} className="text-ntc-muted" />
+                        Vehicle: {req.vehicle_manufacturer} {req.vehicle_model || 'Auto Allocating'}
                       </span>
                     </td>
                     

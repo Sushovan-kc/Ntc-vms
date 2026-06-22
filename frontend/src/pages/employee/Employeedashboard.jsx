@@ -76,7 +76,7 @@ const EmployeeDashboard = () => {
         {/* Card Entry A: Book a Vehicle */}
         <div 
           className="bg-white/95 backdrop-blur-md border border-white/50 rounded-2xl p-6 shadow-xs cursor-pointer select-none transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 hover:shadow-xl hover:border-ntc-blue hover:bg-ntc-light-blue/20 group text-center"
-          onClick={() => navigate('/dashboard/request-vehicle')}
+          onClick={() => navigate('/dashboard/new-booking')}
         >
           <div className="py-4">
             <div className="bg-ntc-blue/10 rounded-full inline-flex p-5 mb-4 group-hover:bg-ntc-blue/15 transition-colors duration-200">
@@ -90,7 +90,7 @@ const EmployeeDashboard = () => {
         {/* Card Entry B: My Requests */}
         <div 
           className="bg-white/95 backdrop-blur-md border border-white/50 rounded-2xl p-6 shadow-xs cursor-pointer select-none transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 hover:shadow-xl hover:border-ntc-blue hover:bg-ntc-light-blue/20 group text-center"
-          onClick={() => navigate('/dashboard/my-requests')}
+          onClick={() => navigate('/dashboard/my-bookings')}
         >
           <div className="py-4">
             <div className="bg-cyan-500/10 rounded-full inline-flex p-5 mb-4 group-hover:bg-cyan-500/15 transition-colors duration-200">
