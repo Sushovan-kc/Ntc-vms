@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'; // 🟢 Restored matching p
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client'; // 🟢 Uses centralized custom Axios client
 import { CarFront, History, ClipboardList, CheckCircle2, AlertCircle } from 'lucide-react';
+import ProfileDropdown from '../../components/ProfileDropdown'; 
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -64,9 +65,12 @@ const EmployeeDashboard = () => {
         </div>
         
         {/* Profile Picture Avatar Sphere */}
-        <div className="bg-ntc-dark-text rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-white font-black text-lg md:text-xl shadow-md select-none shrink-0 border border-white/20">
+        {/* <div className="bg-ntc-dark-text rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-white font-black text-lg md:text-xl shadow-md select-none shrink-0 border border-white/20">
           {user?.first_name?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'E'}
-        </div>
+        </div> */}
+      <div className="shrink-0 flex items-center justify-end">
+        <ProfileDropdown user={user} />
+      </div>
 
       </div>
 
@@ -76,7 +80,7 @@ const EmployeeDashboard = () => {
         {/* Card Entry A: Book a Vehicle */}
         <div 
           className="bg-white/95 backdrop-blur-md border border-white/50 rounded-2xl p-6 shadow-xs cursor-pointer select-none transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 hover:shadow-xl hover:border-ntc-blue hover:bg-ntc-light-blue/20 group text-center"
-          onClick={() => navigate('/dashboard/new-booking')}
+          onClick={() => navigate('/dashboard/employee/bookings')}
         >
           <div className="py-4">
             <div className="bg-ntc-blue/10 rounded-full inline-flex p-5 mb-4 group-hover:bg-ntc-blue/15 transition-colors duration-200">
@@ -90,7 +94,7 @@ const EmployeeDashboard = () => {
         {/* Card Entry B: My Requests */}
         <div 
           className="bg-white/95 backdrop-blur-md border border-white/50 rounded-2xl p-6 shadow-xs cursor-pointer select-none transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 hover:shadow-xl hover:border-ntc-blue hover:bg-ntc-light-blue/20 group text-center"
-          onClick={() => navigate('/dashboard/my-bookings')}
+          onClick={() => navigate('/dashboard/employee/bookinglist')}
         >
           <div className="py-4">
             <div className="bg-cyan-500/10 rounded-full inline-flex p-5 mb-4 group-hover:bg-cyan-500/15 transition-colors duration-200">

@@ -66,13 +66,13 @@ const MyRequests = () => {
         {/* Dynamic New Request Call To Action Anchor Link */}
         <div className="flex gap-3 flex-wrap">
         <Link 
-          to="/dashboard/new-booking" 
+          to="/dashboard/employee/bookings" 
           className="inline-flex items-center justify-center bg-ntc-blue text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:bg-ntc-blue-hover hover:shadow-lg active:scale-98 select-none"
         >
           New Booking Request
         </Link>
         <Link
-            to="/dashboard"
+            to="/dashboard/employee"
             className="inline-flex items-center justify-center bg-ntc-blue text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-300 hover:bg-ntc-gray-hover hover:shadow-lg active:scale-98 select-none"
           >
             Back to Dashboard
