@@ -8,8 +8,11 @@ import Login from '../pages/Login'
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard'
 import EmployeeBooking from '../pages/employee/EmployeeBookingList'
 // import EmployeeProfile from '../pages/employee/EmployeeProfile'
-import NormalDashboard from '../pages/NormalDashboard'
-
+import NormalDashboard from '../pages/ApprovalPendingPage'
+import DriverDashboard from '../pages/driver/DriverDashboard'
+import DriverVehiclePage from '../pages/driver/DriverVehiclePage'
+import DriverDispatchPage from '../pages/driver/DriverDispatchPage'
+import ApprovalPending from '../pages/ApprovalPendingPage'
 function getLocalAuth() {
   try {
     const token = localStorage.getItem('accessToken')
@@ -96,10 +99,22 @@ const Approuter = () => {
         element={<DashboardRoute expectedRole="employee">
           <EmployeeBooking />
         </DashboardRoute>} />
+      <Route path="/dashboard/driver"
+        element={<DashboardRoute expectedRole="driver">
+          <DriverDashboard />
+        </DashboardRoute>} />
+      <Route path="/dashboard/driver/myvehicle"
+        element={<DashboardRoute expectedRole="driver">
+          <DriverVehiclePage />
+        </DashboardRoute>} />
+      <Route path="/dashboard/driver/dispatches"
+        element={<DashboardRoute expectedRole="driver">
+          <DriverDispatchPage />
+        </DashboardRoute>} />
         
     <Route path="/dashboard/normal"
         element={<DashboardRoute expectedRole="" allowPending>
-            <NormalDashboard />
+            <ApprovalPending />
           </DashboardRoute>
         }
       />

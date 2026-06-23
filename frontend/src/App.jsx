@@ -7,6 +7,7 @@ import EmployeeNewBooking from './pages/employee/EmployeeNewBooking'
 import {BrowserRouter,Routes,Route} from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext';
 import Approuter from './routes/Approuter'
+import DriverDashboard from './pages/driver/DriverDashboard'
 const App = () => {
   return (
     <AuthProvider>
