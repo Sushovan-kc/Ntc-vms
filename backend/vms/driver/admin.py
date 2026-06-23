@@ -11,7 +11,7 @@ class DriverProfileAdmin(admin.ModelAdmin):
 admin.site.register(DriverProfile, DriverProfileAdmin)
 
 class DispatchesAdmin(admin.ModelAdmin):
-    list_display = ('driver', 'vehicle', 'booking')
+    list_display = ('id', 'driver', 'vehicle', 'booking')
     search_fields = ('driver__user__user__username', 'vehicle__license_plate', 'booking__id')
     list_filter = ['driver', 'vehicle']
 

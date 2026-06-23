@@ -6,7 +6,8 @@ class DriverProfileFirstTimeSetupSerializer(serializers.ModelSerializer):
     class Meta:
         model = DriverProfile
         # Only expose fields the driver needs to fill out the first time
-        fields = ['license_number', 'license_image', 'address']
+        fields = ['id', 'license_number', 'license_image', 'address']
+        read_only_fields = ['id']  # Prevents the driver from altering the primary key
 
     def validate(self, attrs):
         # 'self.instance' refers to the DriverProfile fetched by get_object()
@@ -142,3 +143,16 @@ class DispatchSerializers(serializers.ModelSerializer):
                 })
                 
         return attrs
+    
+
+
+class DriverDispatchStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dispatches
+        fields = ['dispatch_status']
+        read_only_fields = ['id', 'driver', 'vehicle', 'booking']
+
+    def validate_dispatch_status(self, value):
+        if value not in [Dispatches.DispatchStatusChoices.IN_PROGRESS, Dispatches.DispatchStatusChoices.COMPLETED, Dispatches.DispatchStatusChoices.CANCELLED]:
+            raise serializers.ValidationError("Invalid status update. Allowed values are: IN_PROGRESS, COMPLETED, CANCELLED.")
+        return value

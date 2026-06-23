@@ -22,7 +22,7 @@ const VehicleRequest = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
+    <div className="flex flex-wrap h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
       
       {/* Shared Sidebar Shell */}
       <Sidebar 

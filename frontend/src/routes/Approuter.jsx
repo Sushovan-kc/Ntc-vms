@@ -13,6 +13,7 @@ import DriverDashboard from '../pages/driver/DriverDashboard'
 import DriverVehiclePage from '../pages/driver/DriverVehiclePage'
 import DriverDispatchPage from '../pages/driver/DriverDispatchPage'
 import ApprovalPending from '../pages/ApprovalPendingPage'
+import AdminDashboard from '../pages/admin/AdminDashboard'
 function getLocalAuth() {
   try {
     const token = localStorage.getItem('accessToken')
@@ -37,9 +38,9 @@ function resolveDashboardPath(role, isApproved) {
   }
 
   switch (role) {
+    case 'super admin':
+      return '/dashboard/admin'
     case 'admin':
-      return '/dashboard/superadmin'
-    case 'manager':
       return '/dashboard/admin'
     case 'employee':
       return '/dashboard/employee'
@@ -61,13 +62,23 @@ function DashboardRoute({ expectedRole, allowPending = false, children }) {
     return allowPending ? children : <Navigate to="/dashboard/normal" replace />
   }
 
-  // 🟢 Clean direct check against lowercase value
-  if (role !== expectedRole.toLowerCase()) {
+  // 1. Ensure expectedRole is treated as an array
+  const allowedRoles = Array.isArray(expectedRole) ? expectedRole : [expectedRole];
+
+  // 2. Normalize user role and allowed roles to lowercase for safe comparison
+  const normalizedUserRole = role?.toLowerCase();
+  const hasRequiredRole = allowedRoles
+    .map(r => r.toLowerCase())
+    .includes(normalizedUserRole);
+
+  // 3. Redirect if the user does not have any of the allowed roles
+  if (!hasRequiredRole) {
     return <Navigate to={resolveDashboardPath(role, isApproved)} replace />
   }
 
   return children
 }
+
 
 function RootEntry() {
   const { hasAccess, role, isApproved } = getLocalAuth()
@@ -99,6 +110,9 @@ const Approuter = () => {
         element={<DashboardRoute expectedRole="employee">
           <EmployeeBooking />
         </DashboardRoute>} />
+
+
+
       <Route path="/dashboard/driver"
         element={<DashboardRoute expectedRole="driver">
           <DriverDashboard />
@@ -110,6 +124,13 @@ const Approuter = () => {
       <Route path="/dashboard/driver/dispatches"
         element={<DashboardRoute expectedRole="driver">
           <DriverDispatchPage />
+        </DashboardRoute>} />
+
+
+
+      <Route path="/dashboard/admin"
+        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
+          <AdminDashboard />
         </DashboardRoute>} />
         
     <Route path="/dashboard/normal"

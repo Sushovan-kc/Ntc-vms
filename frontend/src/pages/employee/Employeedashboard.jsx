@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-import { 
-  CarFront, 
-  History, 
-  ClipboardList, 
-  CheckCircle2, 
-  AlertCircle, 
-  LayoutDashboard,
-  Car
-} from 'lucide-react';
+import { CarFront, History, ClipboardList,CheckCircle2,  AlertCircle, LayoutDashboard, Car} from 'lucide-react';
 
 // Atomic Core Shared Presentation Layers Import
 import Sidebar from '../../components/Sidebar';
@@ -22,7 +14,7 @@ import StatCard from '../../components/dashboard/StatCard';
 const EMPLOYEE_NAVIGATION_OPTIONS = [
   { label: 'Employee Dashboard', path: '/dashboard/employee', icon: LayoutDashboard },
   { label: 'My Requests', path: '/dashboard/employee/bookinglist', icon: History },
-  { label: 'Request Vehicle', path: '/dashboard/employee/booking', icon: Car }
+  { label: 'Request Vehicle', path: '/dashboard/employee/bookings', icon: Car }
 ];
 
 const EmployeeDashboard = () => {

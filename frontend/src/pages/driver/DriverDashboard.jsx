@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Car, LayoutDashboard,MapPin } from 'lucide-react';
+import { User, Car, LayoutDashboard,ClipboardList} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
@@ -8,13 +8,79 @@ import Sidebar from '../../components/Sidebar';
 import Header from '../../components/dashboard/Header';
 import ProfileCard from '../../components/dashboard/ProfileCard';
 import DocumentVault from '../../components/dashboard/DocumentVault';
-import ManifestTable from '../../components/dashboard/ManifestTable';
+import UniversalTable from '../../components/dashboard/UniversalTable';
 
 // 🟢 FIX 1: Extracted menu array outside component block to resolve infinite rendering loops
 const DRIVER_NAVIGATION_OPTIONS = [
-  { label: 'Driver Operations', path: '/dashboard/driver', icon: LayoutDashboard },
+  { label: 'Driver Profile', path: '/dashboard/driver', icon: LayoutDashboard },
   { label: 'My Vehicle', path: '/dashboard/driver/myvehicle', icon: Car },
       { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin }
+];
+
+import { MapPin, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react'; // Optional: for badge icons
+
+const dispatchColumns = [
+  { 
+    header: "ID", 
+    key: "id", 
+    render: (val) => <span className="font-bold text-ntc-dark">DISPATCH-#{val}</span> 
+  },
+  {
+    header:"Booked By",
+    key:"booking_user",
+    render:(val) => <span className="font-medium text-ntc-dark">{val || 'N/A'}</span>
+  },
+  { 
+    header: "Destination", 
+    key: "booking_purpose",
+    // Fixes the empty string fallback
+    render: (val) => {
+      return val && val.trim() !== "" ? val : "General Operations / Not Specified";
+    }
+  },
+ {
+    header: "Assigned Fleet Unit",
+    key: "vehicle_model", // This can be any key from your row; the render function overrides it
+    // 💡 Accessing 'row' allows you to read multiple fields at once
+    render: (val, row) => {
+      const vehicleDetails = `${row.vehicle_manufacturer} ${row.vehicle_model}`;
+      const plateNumber = row.vehicle_license_plate;
+
+      return (
+        <div className="flex flex-col">
+          <span className="font-semibold text-ntc-dark">{vehicleDetails}</span>
+          <span className="text-xs text-ntc-blue font-mono font-bold tracking-wide mt-0.5">
+            💳 {plateNumber || 'No Plate Registered'}
+          </span>
+        </div>
+      );
+    }
+  },
+  { 
+    header: "Booking Status", 
+    key: "booking_status",
+    // Adds beautiful badge styling matching the driver_status from your API
+    render: (val) => {
+      const normalizedStatus = val?.toUpperCase();
+      
+      let badgeStyle = "bg-blue-50 text-ntc-blue border-blue-200"; // Default / PENDING
+      
+      if (normalizedStatus === 'COMPLETED') {
+        badgeStyle = "bg-emerald-50 text-ntc-success border-emerald-200";
+      } else if (normalizedStatus === 'ON TRIP') {
+        badgeStyle = "bg-amber-50 text-amber-700 border-amber-200";
+      } else if (normalizedStatus === 'AVAILABLE') {
+        // Style for your current API data state
+        badgeStyle = "bg-teal-50 text-teal-700 border-teal-200"; 
+      }
+
+      return (
+        <span className={`inline-block px-3 py-1 rounded-[20px] text-xs font-bold border ${badgeStyle}`}>
+          {normalizedStatus || 'PENDING DISPATCH'}
+        </span>
+      );
+    }
+  }
 ];
 
 const DriverDashboard = () => {
@@ -148,10 +214,15 @@ const DriverDashboard = () => {
             </div>
           </div>
 
-          <ManifestTable dispatches={dispatches} />
-        </main>
-      </div>
-    </div>
+          <UniversalTable 
+                title="Dispatch Manifests" 
+                icon={ClipboardList} 
+                columns={dispatchColumns} 
+                data={dispatches}
+              />
+                          </main>
+              </div>
+            </div>
   );
 };
 

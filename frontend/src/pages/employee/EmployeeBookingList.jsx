@@ -115,7 +115,7 @@ const MyRequests = () => {
               </Link>
               <Link
                 to="/dashboard/employee"
-                className="inline-flex items-center justify-center bg-gray-200 text-ntc-dark font-semibold text-xs px-4 py-2.5 rounded-md transition-colors duration-200 hover:bg-gray-300 select-none shadow-sm cursor-pointer"
+                className="inline-flex items-center justify-center bg-ntc-blue text-white font-semibold text-xs px-4 py-2.5 rounded-md transition-colors duration-200 hover:bg-opacity-90 select-none shadow-sm cursor-pointer"
               >
                 Back to Dashboard
               </Link>

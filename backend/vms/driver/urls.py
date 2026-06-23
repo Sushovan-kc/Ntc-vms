@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path,include
-from .views import AdminDriverProfileManagementViewSet, DriverProfileSetupViewSet,DriverVehicleInfoViewSet,DispatchViewSet,DriverDispatchView
+from .views import AdminDriverProfileManagementViewSet, DriverProfileSetupViewSet,DriverVehicleInfoViewSet,DispatchViewSet,DriverDispatchView,DriverDispatchStatusUpdateView
 
 urlpatterns = [
      path('update/', DriverProfileSetupViewSet.as_view({
@@ -17,4 +17,5 @@ urlpatterns = [
     
     path('vehicleinfo/', DriverVehicleInfoViewSet.as_view({'get':'retrieve'}), name='driver-vehicle-info'),
     path('admindispatchlist/', DispatchViewSet.as_view({'get':'list'}), name='dispatches'),
-    path('mydispatchinfo/', DriverDispatchView.as_view({'get':'list'}), name='driver-dispatches'),]
+    path('mydispatchinfo/', DriverDispatchView.as_view({'get':'list'}), name='driver-dispatches'),
+    path('dispatch-status-update/<int:pk>/', DriverDispatchStatusUpdateView.as_view({'put':'update'}), name='driver-dispatch-status-update'),]

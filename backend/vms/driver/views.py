@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Dispatches, DriverProfile
-from .serializers import DispatchSerializers, DriverProfileFirstTimeSetupSerializer
+from .serializers import DispatchSerializers, DriverDispatchStatusUpdateSerializer, DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
@@ -115,4 +115,35 @@ class DriverDispatchView(ModelViewSet):
             )
             
         serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+
+class DriverDispatchStatusUpdateView(ModelViewSet):
+    permission_classes = [IsAuthenticated, IsDriver]
+    serializer_class = DriverDispatchStatusUpdateSerializer
+
+    def get_queryset(self):
+        """
+        Filters dispatches to only those assigned to the currently authenticated driver.
+        """
+        return Dispatches.objects.filter(driver__id=self.request.user.profile.driver_profile.id)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Allows drivers to update the status of their assigned dispatches.
+        """
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Only allow status updates
+        if 'dispatch_status' not in request.data:
+            return Response(
+                {"detail": "Only 'dispatch_status' can be updated."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
         return Response(serializer.data)
