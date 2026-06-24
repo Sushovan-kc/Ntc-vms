@@ -14,6 +14,7 @@ import DriverVehiclePage from '../pages/driver/DriverVehiclePage'
 import DriverDispatchPage from '../pages/driver/DriverDispatchPage'
 import ApprovalPending from '../pages/ApprovalPendingPage'
 import AdminDashboard from '../pages/admin/AdminDashboard'
+import AdminVehiclePage from '../pages/admin/AdminVehiclePage' // Ensure this path is correct
 function getLocalAuth() {
   try {
     const token = localStorage.getItem('accessToken')
@@ -131,6 +132,10 @@ const Approuter = () => {
       <Route path="/dashboard/admin"
         element={<DashboardRoute expectedRole={["admin", "super admin"]}>
           <AdminDashboard />
+        </DashboardRoute>} />
+      <Route path="/dashboard/admin/vehicles"
+        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
+          <AdminVehiclePage />
         </DashboardRoute>} />
         
     <Route path="/dashboard/normal"

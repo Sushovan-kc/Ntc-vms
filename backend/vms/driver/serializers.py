@@ -156,3 +156,21 @@ class DriverDispatchStatusUpdateSerializer(serializers.ModelSerializer):
         if value not in [Dispatches.DispatchStatusChoices.IN_PROGRESS, Dispatches.DispatchStatusChoices.COMPLETED, Dispatches.DispatchStatusChoices.CANCELLED]:
             raise serializers.ValidationError("Invalid status update. Allowed values are: IN_PROGRESS, COMPLETED, CANCELLED.")
         return value
+    
+
+class DriverListSerializer(serializers.ModelSerializer):
+    
+    vehicle_assigned =DriverVehicleInfoSerializer(source='AssignedVehicle', read_only=True)
+    username = serializers.ReadOnlyField(source='user.user.username')
+    class Meta:
+        model = DriverProfile
+        fields = ['id', 'user', 'driver_status', 'branch', 'vehicle_assigned', 'username']
+        read_only_fields = ['id', 'user', 'driver_status', 'branch']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.branch:
+            representation['branch'] = instance.branch.name
+        return representation
+    
+    

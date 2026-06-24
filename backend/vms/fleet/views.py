@@ -9,6 +9,7 @@ from core.filters import BranchFilterBackend
 from core.permissions import IsBranchAdmin
 from .serializers import VehicleSerializer, AssignDriverSerializer
 from .models import Vehicle
+from django.db import transaction
 
 # Create your views here.
 class Addnewvehicle(CreateAPIView):
@@ -60,9 +61,36 @@ class VehicleListView(ModelViewSet):
     
 
 class VehicleAssignView(RetrieveUpdateAPIView):
-    queryset =  Vehicle.objects.select_related('current_driver').all()
+    # Optimized using select_related for current_driver to keep it fast
+    queryset = Vehicle.objects.select_related('current_driver').all()
     serializer_class = AssignDriverSerializer
     permission_classes = [IsAuthenticated, IsBranchAdmin]
     filter_backends = [BranchFilterBackend]
+
+    def perform_update(self, serializer):
+        # 1. Get the new driver object from the validated data
+        # 'current_driver' should match the field name in your AssignDriverSerializer
+        new_driver = serializer.validated_data.get('current_driver')
+        
+        # 2. Get the current vehicle being updated
+        target_vehicle = self.get_object()
+
+        # If a new driver is being assigned, wrap the operation in an atomic transaction
+        if new_driver:
+            with transaction.atomic():
+                # 3. Find if this driver is currently assigned to ANY OTHER vehicle
+                # We exclude the target_vehicle so we don't clear it if assigning the same driver
+                existing_vehicle = Vehicle.objects.filter(current_driver=new_driver).exclude(id=target_vehicle.id).first()
+                
+                if existing_vehicle:
+                    # 4. BREAK the old relationship to avoid database unique constraint errors
+                    existing_vehicle.current_driver = None
+                    existing_vehicle.save()
+
+                # 5. Let the serializer finish saving the driver onto the new vehicle
+                serializer.save()
+        else:
+            # If the admin chose 'None' (unassigning a driver), save normally
+            serializer.save()
 
     

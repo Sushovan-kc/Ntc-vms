@@ -159,3 +159,138 @@ const DriverVehiclePage = () => {
 };
 
 export default DriverVehiclePage;
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import { Car, ShieldCheck, Calendar, Hash, LayoutDashboard, MapPin, User } from 'lucide-react';
+// import { useAuth } from '../../context/AuthContext';
+// import apiClient from '../../api/client';
+
+// // Shared Presentation Layout Layers
+// import Sidebar from '../../components/Sidebar';
+// import Header from '../../components/dashboard/Header';
+// import ProfileCard from '../../components/dashboard/ProfileCard'; // 🟢 Import your universal profile card engine
+
+// // Static Memory Navigation References
+// const NAVIGATION_MENU_OPTIONS = [
+//   { label: 'Driver Operations', path: '/dashboard/driver', icon: LayoutDashboard },
+//   { label: 'My Vehicle', path: '/dashboard/driver/vehicle', icon: Car },
+//   { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin }
+// ];
+
+// const DriverVehiclePage = () => {
+//   const { user } = useAuth();
+  
+//   // Layout Structural Toggle States
+//   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+//   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+//   // Core Data States
+//   const [vehicle, setVehicle] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchVehicleData = async () => {
+//       try {
+//         const response = await apiClient.get('/api/driver/vehicleinfo/');
+//         setVehicle(response.data || null);
+//       } catch (err) {
+//         if (err.response?.status !== 404) {
+//           console.error("Error fetching vehicle allocations:", err);
+//         }
+//         setVehicle(null);
+//       } finally {
+//         setLoading(false); 
+//       }
+//     };
+
+//     if (user) {
+//       fetchVehicleData();
+//     }
+//   }, [user]);
+
+//   // 🟢 1. Build the dynamic fields config mapping over your API response values
+//   const vehicleFields = vehicle ? [
+//     { 
+//       label: "License Identifier Plate", 
+//       value: vehicle.license_plate, 
+//       icon: Hash,
+//       render: (val) => (
+//         <span className="inline-block bg-slate-950 text-white px-2.5 py-0.5 text-xs font-mono rounded font-bold tracking-wider shadow-sm">
+//           {val || '—'}
+//         </span>
+//       )
+//     },
+//     { 
+//       label: "Production Model Year", 
+//       value: vehicle.year || 'N/A', 
+//       icon: Calendar 
+//     },
+//     { 
+//       label: "Current Authenticated Custodian", 
+//       value: vehicle.current_driver ? `@${vehicle.current_driver}` : 'Unverified Session User', 
+//       icon: ShieldCheck 
+//     }
+//   ] : [];
+
+//   if (loading) {
+//     return (
+//       <div className="flex items-center justify-center min-h-screen bg-ntc-gray text-ntc-muted font-semibold tracking-wide">
+//         Querying vehicle registry data stream...
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
+      
+//       {/* Sidebar Navigation Context Node */}
+//       <Sidebar 
+//         isSidebarOpen={isSidebarOpen} 
+//         isMobileOpen={isMobileOpen} 
+//         setIsMobileOpen={setIsMobileOpen} 
+//         sidebarcomp={NAVIGATION_MENU_OPTIONS} 
+//       />
+
+//       <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
+        
+//         {/* Global Dashboard Header Element */}
+//         <Header 
+//           userRole={user?.role} 
+//           isSidebarOpen={isSidebarOpen} 
+//           setIsSidebarOpen={setIsSidebarOpen} 
+//           setIsMobileOpen={setIsMobileOpen} 
+//           branchName={user?.userbranch || 'N/A'}
+//         />
+
+//         {/* Main Work Surface Grid Area */}
+//         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6 flex flex-col">
+//           <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
+//             <Car className="text-ntc-blue" size={28} />
+//             My Fleet Assignment
+//           </h1>
+
+//           {/* Balanced Containment Container Layout Wrapper */}
+//           <div className="max-w-md w-full">
+//             <ProfileCard
+//               title={vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : "No Vehicle Assigned"}
+//               badgeText={vehicle ? `ASSET-ID: #VF-${vehicle.id || 'N/A'}` : "UNASSIGNED"}
+//               icon={Car}
+//               statusLabel="Asset Dispatch Clearance"
+//               statusText={vehicle?.approval_status || 'UNASSIGNED'}
+//               statusVariant={vehicle?.approval_status === 'APPROVED' || vehicle?.approval_status === 'AVAILABLE' ? 'success' : 'warning'}
+//               fields={vehicleFields}
+//               emptyMessage="Your driver profile does not currently have an active line-haul vehicle assigned by operations control."
+//             />
+//           </div>
+//         </main>
+
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default DriverVehiclePage;
+

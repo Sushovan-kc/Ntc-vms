@@ -65,6 +65,7 @@ class LoginView(APIView):
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
+            "user_id": user.id,
             'username': user.username,
             'Role': role,
             'is_approved': is_approved,

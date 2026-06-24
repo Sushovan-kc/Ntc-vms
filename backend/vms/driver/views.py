@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Dispatches, DriverProfile
-from .serializers import DispatchSerializers, DriverDispatchStatusUpdateSerializer, DriverProfileFirstTimeSetupSerializer
+from .serializers import DispatchSerializers, DriverDispatchStatusUpdateSerializer, DriverListSerializer, DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
@@ -147,3 +147,44 @@ class DriverDispatchStatusUpdateView(ModelViewSet):
         self.perform_update(serializer)
 
         return Response(serializer.data)
+
+
+class DriverListViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated, IsBranchAdmin]
+    serializer_class = DriverListSerializer
+    filter_backends = [BranchFilterBackend]
+    pagination_class = AdminProfileTablePagination
+    queryset = DriverProfile.objects.all().select_related('user__user', 'branch')
+
+    def list(self, request, *args, **kwargs):
+        # 1. Standard filtering for the main list
+        driver_queryset = self.filter_queryset(self.get_queryset())
+        
+        # 2. FIXED: Changed 'vehicle__isnull' to 'AssignedVehicle__isnull'
+        base_unassigned = DriverProfile.objects.filter(
+            AssignedVehicle__isnull=True,
+            driver_status=DriverProfile.DriverStatusChoices.AVAILABLE
+        ).select_related('user__user', 'branch')
+        
+        # 3. Apply the branch filter to the unassigned drivers list
+        filtered_unassigned = self.filter_queryset(base_unassigned)
+        
+        # 4. Serialize unassigned drivers using your serializer class
+        unassigned_serializer = self.get_serializer(filtered_unassigned, many=True)
+
+        # 5. Maintain table pagination
+        page = self.paginate_queryset(driver_queryset)
+        if page is not None:
+            main_serializer = self.get_serializer(page, many=True)
+            paginated_response = self.get_paginated_response(main_serializer.data)
+            
+            # Inject unassigned drivers cleanly into the paginated response object
+            paginated_response.data['unassigned_drivers'] = unassigned_serializer.data
+            return paginated_response
+
+        # 6. Fallback response structure
+        main_serializer = self.get_serializer(driver_queryset, many=True)
+        return Response({
+            "drivers": main_serializer.data,
+            "unassigned_drivers": unassigned_serializer.data
+        }, status=status.HTTP_200_OK)

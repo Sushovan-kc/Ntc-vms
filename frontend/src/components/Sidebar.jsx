@@ -1,10 +1,11 @@
 import React from 'react';
 import { LayoutDashboard, LogOut,Car,MapPin} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useLocation } from 'react-router-dom'; // 🟢 Added useLocation hook for active route checking
+import { Link, useLocation } from 'react-router-dom'; 
+import ntclogo from '../assets/ntc-logo.png'; // Ensure this path is correct
 
 const Sidebar = ({ isSidebarOpen, isMobileOpen, setIsMobileOpen, sidebarcomp }) => {
-  const { logout } = useAuth(); 
+  const { user,logout } = useAuth(); 
   const location = useLocation(); // 🟢 Read current active browser route location path
 
   const handleLogoutAction = () => {
@@ -31,11 +32,12 @@ const Sidebar = ({ isSidebarOpen, isMobileOpen, setIsMobileOpen, sidebarcomp }) 
       <aside className={`
         fixed inset-y-0 left-0 z-50 flex flex-col bg-ntc-blue text-white transition-all duration-300 overflow-y-auto
         md:relative
-        ${isSidebarOpen ? 'w-[250px]' : 'md:w-0 md:overflow-hidden'}
-        ${isMobileOpen ? 'translate-x-0 w-[250px]' : '-translate-x-full md:translate-x-0'}
+        ${isSidebarOpen ? 'w-62.5' : 'md:w-0 md:overflow-hidden'}
+        ${isMobileOpen ? 'translate-x-0 w-62.5' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Sidebar Corporate Identity Header */}
-        <div className="h-[60px] flex items-center justify-between px-5 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
+        <div className="h-15 flex items-center justify-between px-5 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
+          <img src={ntclogo} alt="NTC Logo" className="w-9 h-9  rounded-full object-cover transform scale-125" />
           <span>NTC ENTERPRISE</span>
         </div>
 

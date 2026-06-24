@@ -7,7 +7,7 @@ urlpatterns = [
     # path('userprofileslist/<int:pk>/',
     #       UserProfileViewSet.as_view({'get': 'retrieve','put': 'update','patch': 'partial_update' }), 
     #       name='user-profile-detail'),
-    path('userdetails/', UserProfileDetailView.as_view({'get': 'retrieve','patch': 'partial_update','put': 'update' }), 
+    path('myprofile/', UserProfileDetailView.as_view({'get': 'retrieve','patch': 'partial_update','put': 'update' }), 
          name='user-profile-detail'),
     path('admin/manageprofiles/<int:pk>/', AdminProfileManagementViewSet.as_view({'get': 'list','put': 'update','patch': 'partial_update' }), name='admin-manage-profiles'),
 ]

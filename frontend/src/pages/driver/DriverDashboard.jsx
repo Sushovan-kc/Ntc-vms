@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Car, LayoutDashboard,ClipboardList} from 'lucide-react';
+import { User, Car, LayoutDashboard,ClipboardList,Hash} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
@@ -83,9 +83,11 @@ const dispatchColumns = [
   }
 ];
 
+
+
 const DriverDashboard = () => {
   const { user } = useAuth();
-  
+  const username =user?.username;
   // Application Data States
   const [driverDetails, setDriverDetails] = useState(null);
   const [vehicle, setVehicle] = useState(null);
@@ -168,7 +170,26 @@ const DriverDashboard = () => {
       </div>
     );
   }
-
+const driverFields = [
+  { 
+    label: "Assigned Vehicle", 
+    value: vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : "Unassigned Pool", 
+    icon: Car 
+  },
+  { 
+    label: "License Plate", 
+    value: vehicle?.license_plate || null, // Matches your verified JSON key
+    icon: Hash,
+    render: (val) => {
+      if (!val) return <span className="text-gray-400">—</span>;
+      return (
+        <span className="inline-block bg-slate-900 text-white px-2.5 py-1 text-xs font-mono rounded font-bold tracking-wider shadow-sm">
+          {val}
+        </span>
+      );
+    }
+  }
+];
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
       {/* 🟢 FIX 3: Linked the Sidebar component down to use the stable static array prop */}
@@ -196,12 +217,15 @@ const DriverDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-4">
-              <ProfileCard 
-                username={user?.username}
-                driverId={driverDetails?.id}
-                driverStatus={driverDetails?.driver_status}
-                vehicle={vehicle}
-              />
+               <ProfileCard
+                      title={username || "Loading Account..."} // Directly forces string rendering while loading
+                      badgeText={`ID: #${driverDetails?.id || 'UNLINKED'}`}
+                      icon={User}
+                      statusLabel="Current Profile Status"
+                      statusText={driverDetails?.driver_status || 'AVAILABLE'}
+                      statusVariant={driverDetails?.driver_status === 'ON TRIP' ? 'warning' : 'success'}
+                      fields={driverFields}
+                    />
             </div>
 
             <div className="lg:col-span-8">

@@ -43,6 +43,8 @@ class VehicleSerializer(serializers.ModelSerializer):
         # Pull details from the related user object securely if it exists
         if instance.current_driver:
             representation['current_driver'] = instance.current_driver.user.user.username if instance.current_driver else None
+        if instance.branch:
+            representation['branch'] = instance.branch.name if instance.branch else None
             
         return representation
         

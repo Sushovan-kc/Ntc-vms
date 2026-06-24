@@ -67,7 +67,7 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['user', 'username', 'email', 'first_name', 'last_name', 'role', 'role_approved', 'phone_number', 'branch', 'approved_by']
+        fields = ['id', 'user', 'username', 'email', 'first_name', 'last_name', 'role', 'role_approved', 'phone_number', 'branch', 'approved_by']
         
         # Security: Prevent standard users from escalating privileges or changing groups
         read_only_fields = ['user', 'role', 'role_approved', 'branch', 'approved_by']

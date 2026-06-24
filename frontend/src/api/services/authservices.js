@@ -13,6 +13,8 @@ const authservice = {
     }
     
     const userPayload = {
+      user_id: response.data.user_id,
+      username: response.data.username,
       role: response.data.Role,             
       is_approved: response.data.is_approved,
       userbranch: response.data.branch_name,
