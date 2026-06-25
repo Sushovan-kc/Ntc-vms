@@ -2,24 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Car, LayoutDashboard, Hash, Calendar, ShieldCheck, UserCheck, Database,Activity,BookOpen} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import adminservices from '../../api/services/adminservices';
-
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/dashboard/Header';
 import UniversalVehicleCard from '../../components/vehicle/VehicleCard';
 
-const AdminNavigationOptions = [
-    { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
-    { label: 'Manage Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
-    { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
-    { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
-    { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
-];
 
 
 const AdminVehiclePage = () => {
   const { user } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
 
   // Data State Arrays
   const [vehicles, setVehicles] = useState([]); 
@@ -85,12 +74,7 @@ const handleCommitAssignment = async (vehicleId, selectedDriver) => {
 
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      <Sidebar isSidebarOpen={isSidebarOpen} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} sidebarcomp={AdminNavigationOptions} />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header userRole={user?.role} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} setIsMobileOpen={setIsMobileOpen} branchName={user?.userbranch || 'N/A'} />
-
+<>
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           <div>
             <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
@@ -205,8 +189,7 @@ const handleCommitAssignment = async (vehicleId, selectedDriver) => {
             </div>
           )}
         </main>
-      </div>
-    </div>
+</>
   );
 };
 

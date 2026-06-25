@@ -8,38 +8,11 @@ import VehicleAddForm from '../../components/vehicle/VehicleAddForm';
 
 
 
-const AdminNavigationOptions = [
-    { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
-    { label: 'Manage Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
-    { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
-    { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
-    { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
-];
-
-
 const AdminAddVehicle = () => {
+  const { user } = useAuth();
 
-    const { user } = useAuth();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={AdminNavigationOptions}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen} 
-          branchName={user?.userbranch || 'N/A'}
-        />
+return (<>
 
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6 flex flex-col items-center">
           <div className="w-full max-w-2xl text-left self-center">
@@ -55,8 +28,7 @@ return (
           {/* 🟢 Render Form Component cleanly inside your centered column layout space */}
           <VehicleAddForm onAdditionSuccess={() => console.log('Database synchronization updated.')} />
         </main>
-      </div>
-    </div>
+   </>
   );
 };
 export default AdminAddVehicle

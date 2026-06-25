@@ -2,20 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Car, LayoutDashboard,ClipboardList,Hash} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
-
-// Atomic Presentation Layers Import
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/dashboard/Header';
 import ProfileCard from '../../components/dashboard/ProfileCard';
 import DocumentVault from '../../components/dashboard/DocumentVault';
 import UniversalTable from '../../components/dashboard/UniversalTable';
+import driverServices from '../../api/services/driverservices';
 
-// 🟢 FIX 1: Extracted menu array outside component block to resolve infinite rendering loops
-const DRIVER_NAVIGATION_OPTIONS = [
-  { label: 'Driver Profile', path: '/dashboard/driver', icon: LayoutDashboard },
-  { label: 'My Vehicle', path: '/dashboard/driver/myvehicle', icon: Car },
-      { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin }
-];
 
 import { MapPin, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react'; // Optional: for badge icons
 
@@ -94,11 +85,6 @@ const DriverDashboard = () => {
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  
-  // Responsive UI States
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  
   const fileInputRef = useRef(null);
 
   const hydrateDashboardData = async () => {
@@ -107,19 +93,19 @@ const DriverDashboard = () => {
       setDriverDetails(profileResponse.data);
 
       const [vehicleResult, dispatchResult] = await Promise.allSettled([
-        apiClient.get('/api/driver/vehicleinfo/'),
-        apiClient.get('/api/driver/mydispatchinfo/')
+        driverServices.getDriverVehicleInfo(),
+        driverServices.getDriverDispatches()
       ]);
 
       if (vehicleResult.status === 'fulfilled') {
-        setVehicle(vehicleResult.value.data || null);
+        setVehicle(vehicleResult.value || null);
       } else {
         if (vehicleResult.reason.response?.status !== 404) console.error(vehicleResult.reason);
         setVehicle(null);
       }
 
       if (dispatchResult.status === 'fulfilled') {
-        setDispatches(dispatchResult.value.data || []);
+        setDispatches(dispatchResult.value || []);
       } else {
         if (dispatchResult.reason.response?.status !== 404) console.error(dispatchResult.reason);
         setDispatches([]);
@@ -191,24 +177,7 @@ const driverFields = [
   }
 ];
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      {/* 🟢 FIX 3: Linked the Sidebar component down to use the stable static array prop */}
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={DRIVER_NAVIGATION_OPTIONS}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen} 
-            branchName={user?.userbranch || 'N/A'}
-        />
-
+    <>
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
             <User className="text-ntc-blue" size={28} />
@@ -244,10 +213,9 @@ const driverFields = [
                 columns={dispatchColumns} 
                 data={dispatches}
               />
-                          </main>
-              </div>
-            </div>
-  );
+          </main>
+</>
+  )
 };
 
 export default DriverDashboard;

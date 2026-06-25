@@ -4,23 +4,10 @@ import { Car, MapPin, Calendar, LayoutDashboard, History, ClipboardList } from '
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
-// Shared Presentation Layout Layers
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/dashboard/Header';
-
-// 🟢 NAVIGATION CONFIGURATION: Placed outside component block to stop infinite rendering loops
-const EMPLOYEE_NAVIGATION_OPTIONS = [
-  { label: 'Employee Dashboard', path: '/dashboard/employee', icon: LayoutDashboard },
-  { label: 'My Requests', path: '/dashboard/employee/bookinglist', icon: History },
-      { label: 'Request Vehicle', path: '/dashboard/employee/booking', icon: Car }
-];
 
 const MyRequests = () => {
   const { user } = useAuth();
   
-  // Layout Structural Toggle States
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   
   // Application Operational Core States
   const [myRequests, setMyRequests] = useState([]);
@@ -69,28 +56,7 @@ const MyRequests = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      
-      {/* Shared Sidebar Shell Component */}
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={EMPLOYEE_NAVIGATION_OPTIONS} 
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        
-        {/* Shared Top Navigation Bar Component */}
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen}
-          branchName={user?.userbranch|| 'N/A'} 
-        />
-
-        {/* Scroll Container Workspace Main Body Area */}
+<>
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           
           {/* Header Bar Area */}
@@ -221,8 +187,7 @@ const MyRequests = () => {
           </div>
 
         </main>
-      </div>
-    </div>
+</>
   );
 };
 

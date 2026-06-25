@@ -1,19 +1,12 @@
 import { React,useState,useEffect } from 'react'
 import adminservices from '../../api/services/adminservices'
 import { useAuth } from '../../context/AuthContext';
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/dashboard/Header';
-import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen,ClipboardList } from 'lucide-react';
+import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen,ClipboardList,NotebookPen } from 'lucide-react';
 import VehicleAddForm from '../../components/vehicle/VehicleAddForm';
 import UniversalTable from '../../components/dashboard/UniversalTable';
+import bookingServices from '../../api/services/bookingservices'
+import PendingBookingsSection from '../../components/booking/PendingBookingsSection';
 
-const AdminNavigationOptions = [
-    { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
-    { label: 'Manage Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
-    { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
-    { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
-    { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
-];
 
 
 const bookingColumns = [
@@ -136,8 +129,6 @@ const bookingColumns = [
 const AdminBookingPage = () => {
 
     const { user } = useAuth();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true); 
 
@@ -146,7 +137,7 @@ const hydrateDashboardData = async () => {
   setLoading(true); 
   try {
     const [bookingsResult] = await Promise.allSettled([
-      adminservices.getBookingList()
+      bookingServices.getBookingList()
     ]);
 
     // 3. Handle Bookings List Data Pipeline
@@ -172,40 +163,28 @@ useEffect(() => {
 
 
   return (
-  <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      {/* 🟢 FIX 3: Linked the Sidebar component down to use the stable static array prop */}
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={AdminNavigationOptions}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen} 
-            branchName={user?.userbranch || 'N/A'}
-        />
+<>
 
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
-            <Car className="text-ntc-blue" size={28} />
-            Admin Command Center
+            <NotebookPen className="text-ntc-blue" size={28} />
+            Booking Management Panel
           </h1>
-          </main>
 
-        <UniversalTable 
-                title="Booking List" 
-                icon={ClipboardList} 
-                columns={bookingColumns} 
-                data={bookings}
-              />
-      </div>
-    </div>
-  )
+          {/* 🌟 Added: Action cards render right above the universal data layout */}
+          <PendingBookingsSection 
+            bookings={bookings} 
+            onRefresh={hydrateDashboardData} 
+          />
+
+          <UniversalTable 
+            title="Booking List" 
+            icon={ClipboardList} 
+            columns={bookingColumns} 
+            data={bookings}
+          />
+        </main>
+</>
+  );
 }
-
 export default AdminBookingPage

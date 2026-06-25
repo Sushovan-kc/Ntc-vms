@@ -37,19 +37,23 @@ class BookingApprovalView(ModelViewSet):
     serializer_class = BookingApprovalSerializer
     filter_backends = [BranchFilterBackend]
     queryset = Booking.objects.all()
+
     def partial_update(self, request, *args, **kwargs):
-        """
-        Overriding partial_update allows us to provide your custom 
-        success message while maintaining generic performance.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True) # Automatically throws 400 Bad Request if invalid
-        self.perform_update(serializer)
+        # FIX: Fetch the specific database record being targeted
+        instance = self.get_object()
+        
+        # FIX: Pass the instance AND request data, with partial=True
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        # FIX: Trigger the serializer's custom update() method
+        serializer.save()
         
         return Response(
             {"message": "Booking approval status updated successfully."}, 
             status=status.HTTP_200_OK
         )
+
     
 class BookingListView(ModelViewSet):
     permission_classes = [IsAuthenticated, IsBranchAdmin]
@@ -58,12 +62,20 @@ class BookingListView(ModelViewSet):
     queryset = Booking.objects.all()
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from django.utils.dateparse import parse_datetime
+
 class AvailableVehicleListView(APIView):
     """
-    Returns a list of vehicles that are either fully unbooked 
-    or only have 'PENDING' bookings during the requested window.
+    Returns a list of vehicles that are either fully unbooked,
+    only have 'PENDING' bookings during the requested window,
+    and currently have an assigned driver.
     """
     permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         # 1. Extract query params from the URL
         start_str = request.query_params.get('start_time')
@@ -95,9 +107,13 @@ class AvailableVehicleListView(APIView):
             end_time__gt=start_time
         ).values_list('vehicle_id', flat=True)
 
-        # 6. Exclude unavailable cars (leaves free + pending cars)
-        available_vehicles = Vehicle.objects.filter(approval_status=Vehicle.status.AVAILABLE).exclude(id__in=unavailable_ids)
+        # 6. Filter available cars with a driver and exclude unavailable blocks
+        available_vehicles = Vehicle.objects.filter(
+            approval_status=Vehicle.status.AVAILABLE,
+            current_driver__isnull=False  # Validates that a driver is explicitly assigned
+        ).exclude(id__in=unavailable_ids)
 
+        # 7. Apply optional context filters
         if requested_vehicle_choice:
             available_vehicles = available_vehicles.filter(vehicle_choice=requested_vehicle_choice)
 
@@ -106,7 +122,10 @@ class AvailableVehicleListView(APIView):
             if user_branch is not None:
                 available_vehicles = available_vehicles.filter(branch=user_branch)
 
-        # 7. Serialize and return the filtered list
+        # 8. Optimize database access and serialize
+        # select_related performs a SQL JOIN to pull driver data efficiently in 1 query
+        available_vehicles = available_vehicles.select_related('current_driver')
+        
         serializer = VehicleSerializer(available_vehicles, many=True)
         return Response(serializer.data)
 

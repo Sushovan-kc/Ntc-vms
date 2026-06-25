@@ -27,6 +27,13 @@ class BookingSerializer(serializers.ModelSerializer):
         validated_data['branch'] = user_branch  # <-- This locks it into the database column
         
         return super().create(validated_data)
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        if instance.user:
+            representation['user'] = instance.user.username
+        return representation
 
 
 class BookingApprovalSerializer(serializers.ModelSerializer):
@@ -42,20 +49,20 @@ class BookingApprovalSerializer(serializers.ModelSerializer):
             
         admin_user = request.user
 
-        # 1. Update the status using standard validated data
-        instance.status = validated_data.get('status', instance.status)
+        # 1. Dynamically apply ALL validated data (fixes assigned_vehicle not updating)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
 
-        # 2. Assign read-only fields DIRECTLY to the instance instead of validated_data
+        # 2. Run your status conditional overrides
         if instance.status == Booking.BookingStatus.APPROVED:
             instance.approved_by = admin_user
+        elif instance.status == Booking.BookingStatus.PENDING:
+            instance.approved_by = None
             
-            if validated_data.get('assigned_vehicle') is None and instance.vehicle is not None:
-                instance.assigned_vehicle = instance.vehicle
+            # Auto-assign driver from the base vehicle if not manually provided
+            if not validated_data.get('assigned_driver') and instance.vehicle:
                 instance.assigned_driver = instance.vehicle.current_driver
 
-                
-        # 3. Save the instance directly to force the database update
+        # 3. Commit changes to the database
         instance.save()
         return instance
-    
-

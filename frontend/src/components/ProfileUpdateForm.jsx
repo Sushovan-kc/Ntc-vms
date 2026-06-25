@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const ProfileUpdateCard = ({ 
-  title = "Update Account Node", 
+  title = "Update Account Details", 
   subtitle = "Modify authorized registry parameters securely below.",
   icon: Icon, 
   initialData = {}, 

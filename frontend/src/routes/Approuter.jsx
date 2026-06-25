@@ -1,13 +1,9 @@
 import React from 'react'
-// FIXED: Included Navigate in the react-router-dom imports
 import { Routes, Route, Navigate } from 'react-router-dom'
-
-// FIXED: Ensure these components are imported from your project paths
 import EmployeeNewBooking from '../pages/employee/EmployeeNewBooking' 
 import Login from '../pages/Login'
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard'
 import EmployeeBooking from '../pages/employee/EmployeeBookingList'
-// import EmployeeProfile from '../pages/employee/EmployeeProfile'
 import NormalDashboard from '../pages/ApprovalPendingPage'
 import DriverDashboard from '../pages/driver/DriverDashboard'
 import DriverVehiclePage from '../pages/driver/DriverVehiclePage'
@@ -18,6 +14,9 @@ import AdminVehiclePage from '../pages/admin/AdminVehiclePage'
 import AdminAddVehicle from '../pages/admin/AdminAddVehicle'
 import AdminDispatchPage from '../pages/admin/AdminDispatchPage'
 import AdminBookingPage from '../pages/admin/AdminManageBookingPage'
+import AdminLayout from '../components/AdminLayout'
+import DriverLayout from '../components/DriverLayout'
+import EmployeeLayout from '../components/EmployeeLayout'
 
 function getLocalAuth() {
   try {
@@ -103,58 +102,38 @@ const Approuter = () => {
       {/* 🟢 Routes configured with strict lowercase role expectations */}
       <Route path="/dashboard/employee"
         element={<DashboardRoute expectedRole="employee">
-          <EmployeeDashboard />
-        </DashboardRoute>} />
+          <EmployeeLayout />
+        </DashboardRoute>} >
         
-      <Route path="/dashboard/employee/bookings"
-        element={<DashboardRoute expectedRole="employee">
-          <EmployeeNewBooking />
-        </DashboardRoute>} />
-        
-      <Route path="/dashboard/employee/bookinglist"
-        element={<DashboardRoute expectedRole="employee">
-          <EmployeeBooking />
-        </DashboardRoute>} />
-
+      <Route index element={<EmployeeDashboard />} />
+      <Route path="booking" element={<EmployeeNewBooking />} />
+      <Route path="bookinglist" element={<EmployeeBooking />} />
+      </Route>
 
 
       <Route path="/dashboard/driver"
         element={<DashboardRoute expectedRole="driver">
-          <DriverDashboard />
-        </DashboardRoute>} />
-      <Route path="/dashboard/driver/myvehicle"
-        element={<DashboardRoute expectedRole="driver">
-          <DriverVehiclePage />
-        </DashboardRoute>} />
-      <Route path="/dashboard/driver/dispatches"
-        element={<DashboardRoute expectedRole="driver">
-          <DriverDispatchPage />
-        </DashboardRoute>} />
+          <DriverLayout />
+        </DashboardRoute>} >
+      <Route index element={<DriverDashboard />} />
+      <Route path="myvehicle" element={<DriverVehiclePage />} />
+      <Route path="dispatches" element={<DriverDispatchPage />} />
+      </Route>
+      
 
+      <Route path="/dashboard/admin" 
+        element={
+          <DashboardRoute expectedRole={["admin", "super admin"]}>
+            <AdminLayout />
+          </DashboardRoute> }>
 
+        <Route index element={<AdminDashboard />} /> 
+        <Route path="vehicles" element={<AdminVehiclePage />} /> 
+        <Route path="addvehicles" element={<AdminAddVehicle />} /> 
+        <Route path="bookings" element={<AdminBookingPage />} /> 
+      </Route>
 
-      <Route path="/dashboard/admin"
-        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
-          <AdminDashboard />
-        </DashboardRoute>} />
-      <Route path="/dashboard/admin/vehicles"
-        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
-          <AdminVehiclePage />
-        </DashboardRoute>} />
-      <Route path="/dashboard/admin/addvehicles"
-        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
-          <AdminAddVehicle />
-        </DashboardRoute>} />
  
-      <Route path="/dashboard/admin/bookings"
-        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
-          <AdminBookingPage />
-        </DashboardRoute>} />
- 
-        
-
-
-
     <Route path="/dashboard/normal"
         element={<DashboardRoute expectedRole="" allowPending>
             <ApprovalPending />

@@ -1,26 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Truck,Car, ShieldCheck, Calendar, Hash, LayoutDashboard,MapPin } from 'lucide-react'; // 🟢 Added LayoutDashboard
 import { useAuth } from '../../context/AuthContext';
-import apiClient from '../../api/client';
-
+import driverServices from '../../api/services/driverservices';
 // Shared Presentation Layout Layers
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/dashboard/Header';
 
-// 🟢 FIX 1: Move this configuration array OUTSIDE of the component block
-// This locks the memory reference and instantly stops the Django request loop!
-const NAVIGATION_MENU_OPTIONS = [
-  { label: 'Driver Operations', path: '/dashboard/driver', icon: LayoutDashboard },
-  { label: 'My Vehicle', path: '/dashboard/driver/vehicle', icon: Car },
-      { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin }
-];
 
 const DriverVehiclePage = () => {
   const { user } = useAuth();
   
-  // Layout Structural Toggle States
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   
   // Core Data States
   const [vehicle, setVehicle] = useState(null);
@@ -30,8 +19,8 @@ const DriverVehiclePage = () => {
     const fetchVehicleData = async () => {
       try {
         // 🟢 Perfect: Keep this path exactly as your log file expects it!
-        const response = await apiClient.get('/api/driver/vehicleinfo/');
-        setVehicle(response.data || null);
+        const [response] = await Promise.allSettled([driverServices.getDriverVehicleInfo()]);
+        setVehicle(response.value || null);
       } catch (err) {
         if (err.response?.status !== 404) {
           console.error("Error fetching vehicle allocations:", err);
@@ -57,24 +46,6 @@ const DriverVehiclePage = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      
-      {/* Reusable Sidebar using our reference locked options prop */}
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={NAVIGATION_MENU_OPTIONS} 
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen} 
-          branchName={user?.userbranch || 'N/A'}
-        />
 
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
@@ -153,8 +124,6 @@ const DriverVehiclePage = () => {
             )}
           </div>
         </main>
-      </div>
-    </div>
   );
 };
 

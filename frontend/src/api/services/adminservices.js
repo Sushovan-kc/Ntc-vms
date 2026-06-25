@@ -68,15 +68,7 @@ const adminservices = {
       }
     },
 
-    getBookingList: async () => {
-      try {
-        const response = await apiClient.get('/api/booking/list/');
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching booking list:', error);
-        throw error;
-      }
-    }
+
 
 };
 

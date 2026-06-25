@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, Calendar, MapPin, Truck, Shield, Clock, HelpCircle ,Car} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import apiClient from '../../api/client';
+import driverServices from '../../api/services/driverservices'; // Ensure this path is correct
 
-// Shared Presentation Layout Layers
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/dashboard/Header';
-
-// Static Reference Navigation Array to prevent infinite render loops
-const NAVIGATION_MENU_OPTIONS = [
-  { label: 'Driver Operations', path: '/dashboard/driver', icon: ClipboardList },
-  { label: 'My Vehicle', path: '/dashboard/driver/vehicle', icon: Car},
-    { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin },  
-
-];
 
 const DriverDispatchesPage = () => {
   const { user } = useAuth();
@@ -30,8 +19,8 @@ const DriverDispatchesPage = () => {
     const fetchDispatchData = async () => {
       try {
         // Hits your exact 'driver-dispatches' Django REST endpoint logged in your console
-        const response = await apiClient.get('/api/driver/mydispatchinfo/');
-        setDispatches(Array.isArray(response.data) ? response.data : []);
+        const [response] = await Promise.allSettled([driverServices.getDriverDispatches()]);
+        setDispatches(Array.isArray(response.value) ? response.value : []);
       } catch (err) {
         if (err.response?.status !== 404) {
           console.error("Error fetching driver manifest streams:", err);
@@ -67,23 +56,6 @@ const DriverDispatchesPage = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-ntc-gray font-sans antialiased text-ntc-dark">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        isMobileOpen={isMobileOpen} 
-        setIsMobileOpen={setIsMobileOpen} 
-        sidebarcomp={NAVIGATION_MENU_OPTIONS} 
-      />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full w-full transition-all duration-300">
-        <Header 
-          userRole={user?.role} 
-          isSidebarOpen={isSidebarOpen} 
-          setIsSidebarOpen={setIsSidebarOpen} 
-          setIsMobileOpen={setIsMobileOpen} 
-          branchName={user?.userbranch || 'N/A'}
-        />
-
         <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
           <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
             <ClipboardList className="text-ntc-blue" size={28} />
@@ -192,8 +164,6 @@ const DriverDispatchesPage = () => {
             </div>
           )}
         </main>
-      </div>
-    </div>
   );
 };
 
