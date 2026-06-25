@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Car, LayoutDashboard, Hash, Calendar, ShieldCheck, UserCheck } from 'lucide-react';
+import { Car, LayoutDashboard, Hash, Calendar, ShieldCheck, UserCheck, Database,Activity,BookOpen} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import {adminservices} from '../../api/services/adminservices';
+import adminservices from '../../api/services/adminservices';
 
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/dashboard/Header';
 import UniversalVehicleCard from '../../components/vehicle/VehicleCard';
 
 const AdminNavigationOptions = [
-  { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
-  { label: 'Add Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
+    { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
+    { label: 'Manage Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
+    { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
+    { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
+    { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
 ];
+
 
 const AdminVehiclePage = () => {
   const { user } = useAuth();
@@ -26,89 +30,58 @@ const AdminVehiclePage = () => {
   const [activeVehicleSelectId, setActiveVehicleSelectId] = useState(null); 
   const [submittingId, setSubmittingId] = useState(null); 
 
+
+
+  const hydrateFleetAndCrews = async () => {
+  try {
+    const [vehicleData, driverResponse] = await Promise.all([
+      adminservices.getVehicleList(),
+      adminservices.getDriverList() 
+    ]);
+    
+    setVehicles(vehicleData || []);
+    
+    // 🟢 Safely extract the 'unassigned_drivers' block from your specific endpoint structure
+    const availablePool = driverResponse?.unassigned_drivers || [];
+    setUnassignedDrivers(availablePool.filter(d => d.driver_status === 'AVAILABLE'));
+
+  } catch (err) {
+    console.error("Core synchronization pipeline fault:", err);
+  } finally {
+    setLoading(false);
+  }
+};
   // Synchronize both data streams simultaneously on mount
   useEffect(() => {
-    const hydrateFleetAndCrews = async () => {
-      try {
-        const [vehicleData, driverResponse] = await Promise.all([
-          adminservices.getVehicleList(),
-          adminservices.getDriverList() 
-        ]);
-        
-        setVehicles(vehicleData || []);
-        
-        // 🟢 Safely extract the 'unassigned_drivers' block from your specific endpoint structure
-        const availablePool = driverResponse?.unassigned_drivers || [];
-        setUnassignedDrivers(availablePool.filter(d => d.driver_status === 'AVAILABLE'));
-
-      } catch (err) {
-        console.error("Core synchronization pipeline fault:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     hydrateFleetAndCrews();
   }, []);
 
-  // 🟢 ASYNC PATCH MUTATION HANDLER
-  // 🟢 FIXED ASSIGNMENT PIPELINE: Handles adding replaced drivers back to the pool
-  const handleCommitAssignment = async (vehicleId, selectedUserId) => {
-    if (!selectedUserId) return;
-    setSubmittingId(vehicleId);
+const handleCommitAssignment = async (vehicleId, selectedDriver) => {
+  if (!selectedDriver || !selectedDriver.id) return;
+  setSubmittingId(vehicleId);
 
-    try {
-      const parsedUserId = parseInt(selectedUserId, 10);
-      
-      // 1. Find the vehicle we are about to update to see if it ALREADY has a driver
-      const targetVehicle = vehicles.find(v => v.id === vehicleId);
-      
-      // Extract the old driver's info before overwriting it (handles format fallback)
-      let oldDriverId = null;
-      if (targetVehicle && targetVehicle.current_driver) {
-        // If your state stores raw ID numbers or strings like "User Node #5", extract the digits:
-        const matches = String(targetVehicle.current_driver).match(/\d+/);
-        oldDriverId = matches ? parseInt(matches[0], 10) : null;
-      }
+  try {
+    const parsedUserId = parseInt(selectedDriver.id, 10);
+    
+    const partialPatchPayload = {
+      current_driver: parsedUserId
+    };
+    
+    // Fire the PATCH request to your backend database
+    await adminservices.assignVehicle(vehicleId, partialPatchPayload);
+    
+    // Close the dropdown drawer view panel upon success
+    setActiveVehicleSelectId(null);
 
-      const partialPatchPayload = {
-        current_driver: parsedUserId
-      };
-      
-      // Fire the PATCH request to your vehicle ID endpoint path
-      await adminservices.assignVehicle(vehicleId, partialPatchPayload);
-      
-      // 2. Update local vehicle state to show the new assignment instantly
-      setVehicles(prev => prev.map(v => v.id === vehicleId ? { ...v, current_driver: `User Node #${parsedUserId}` } : v));
-      
-      // 3. 🟢 CRITICAL FIX: Recalculate your available drivers pool state
-      setUnassignedDrivers(prev => {
-        // Step A: Remove the newly hired driver from the pool
-        let updatedPool = prev.filter(d => d.user !== parsedUserId);
-        
-        // Step B: If there WAS an old driver, recreate their object and put them BACK into the pool
-        if (oldDriverId && oldDriverId !== parsedUserId) {
-          const resurrectedDriver = {
-            id: Date.now(), // Unique runtime temporary react key
-            user: oldDriverId,
-            driver_status: 'AVAILABLE',
-            branch: targetVehicle.branch || 1
-          };
-          updatedPool = [...updatedPool, resurrectedDriver];
-        }
-        
-        return updatedPool;
-      });
-      
-      // Collapse selector box panel
-      setActiveVehicleSelectId(null);
-      alert("Operator replaced successfully! Preceding driver returned to available pool.");
-    } catch (err) {
-      console.error("Vehicle partial patch modification error:", err);
-      alert("Failed to commit vehicle patch assignment updates.");
-    } finally {
-      setSubmittingId(null);
-    }
-  };
+    // 🟢 SILENT RE-FETCH: Pull the fresh database state over the network smoothly
+    await hydrateFleetAndCrews();
+
+  } catch (error) {
+    console.error("Vehicle partial patch modification error:", error);
+  } finally {
+    setSubmittingId(null);
+  }
+};
 
 
   return (
@@ -140,7 +113,7 @@ const AdminVehiclePage = () => {
             </div>
           ) : (
             /* RESPONSIVE GRID LAYOUT CANVAS */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
               {vehicles.map((vehicle) => {
                 const vehicleMetrics = [
                   { label: "Model Variant", value: vehicle.model },
@@ -174,7 +147,7 @@ const AdminVehiclePage = () => {
                 const isSelectingThisCard = activeVehicleSelectId === vehicle.id;
 
                 return (
-                  <div key={vehicle.id} className="flex flex-col gap-3 h-full">
+                  <div key={vehicle.id} className="flex flex-col gap-3 h-fit">
                     <UniversalVehicleCard
                       title={vehicle.manufacturer}
                       badgeText={`Vehicle ID: #VN-${vehicle.id}`}
@@ -200,20 +173,28 @@ const AdminVehiclePage = () => {
                             ⚠️ No unassigned drivers currently available.
                           </div>
                         ) : (
-                          <select
+                         <select
                                     disabled={submittingId === vehicle.id}
-                                    onChange={(e) => handleCommitAssignment(vehicle.id, e.target.value)}
+                                    onChange={(e) => {
+                                      const selectedDriverId = e.target.value;
+                                      // Find the driver object to get the username string
+                                      const selectedDriver = unassignedDrivers.find(d => String(d.id) === String(selectedDriverId));
+                                      
+                                      if (selectedDriver) {
+                                        handleCommitAssignment(vehicle.id, selectedDriver);
+                                      }
+                                    }}
                                     defaultValue=""
                                     className="w-full bg-ntc-gray border border-gray-200 rounded-md px-2.5 py-1.5 text-xs font-bold text-ntc-dark focus:outline-none focus:border-ntc-blue transition-all disabled:opacity-50"
-                                    >
+                                  >
                                     <option value="" disabled hidden>— Choose Available Driver —</option>
                                     {unassignedDrivers.map((driver) => (
-                                        /* 🟢 Keeps the numerical user ID for the backend, but displays the real username string to the Admin */
-                                        <option key={driver.id} value={driver.user}>
+                                      /* 🟢 FIX: Set value cleanly to the driver's unique ID */
+                                      <option key={driver.id} value={driver.id}>
                                         👤 {driver.username} ({driver.branch})
-                                        </option>
+                                      </option>
                                     ))}
-                                    </select>
+                                  </select>
 
                         )}
                       </div>

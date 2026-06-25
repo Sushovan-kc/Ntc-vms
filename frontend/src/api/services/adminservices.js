@@ -1,6 +1,6 @@
 import apiClient from "../client";
 
-export const adminservices = {
+const adminservices = {
 
     AdminProfile: async () => {
         try {
@@ -14,7 +14,7 @@ export const adminservices = {
 
     AddVehicle: async (vehicleData) => {
         try {
-            const response = await apiClient.post('/api/vehicles/', vehicleData);
+            const response = await apiClient.post('/api/vehicles/add/', vehicleData);
             return response.data;
         } catch (error) {
             console.error('Error adding vehicle:', error);
@@ -66,7 +66,19 @@ export const adminservices = {
         console.error('Error fetching unassigned driver list:', error);
         throw error;
       }
+    },
+
+    getBookingList: async () => {
+      try {
+        const response = await apiClient.get('/api/booking/list/');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching booking list:', error);
+        throw error;
+      }
     }
 
 };
 
+
+export default adminservices;

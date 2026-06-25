@@ -14,7 +14,11 @@ import DriverVehiclePage from '../pages/driver/DriverVehiclePage'
 import DriverDispatchPage from '../pages/driver/DriverDispatchPage'
 import ApprovalPending from '../pages/ApprovalPendingPage'
 import AdminDashboard from '../pages/admin/AdminDashboard'
-import AdminVehiclePage from '../pages/admin/AdminVehiclePage' // Ensure this path is correct
+import AdminVehiclePage from '../pages/admin/AdminVehiclePage' 
+import AdminAddVehicle from '../pages/admin/AdminAddVehicle'
+import AdminDispatchPage from '../pages/admin/AdminDispatchPage'
+import AdminBookingPage from '../pages/admin/AdminManageBookingPage'
+
 function getLocalAuth() {
   try {
     const token = localStorage.getItem('accessToken')
@@ -137,7 +141,20 @@ const Approuter = () => {
         element={<DashboardRoute expectedRole={["admin", "super admin"]}>
           <AdminVehiclePage />
         </DashboardRoute>} />
+      <Route path="/dashboard/admin/addvehicles"
+        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
+          <AdminAddVehicle />
+        </DashboardRoute>} />
+ 
+      <Route path="/dashboard/admin/bookings"
+        element={<DashboardRoute expectedRole={["admin", "super admin"]}>
+          <AdminBookingPage />
+        </DashboardRoute>} />
+ 
         
+
+
+
     <Route path="/dashboard/normal"
         element={<DashboardRoute expectedRole="" allowPending>
             <ApprovalPending />

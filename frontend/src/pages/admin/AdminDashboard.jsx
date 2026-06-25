@@ -1,20 +1,24 @@
 import { React,useState,useEffect } from 'react'
-import{adminservices} from '../../api/services/adminservices'
+import adminservices from '../../api/services/adminservices'
 import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/dashboard/Header';
 import ProfileCard from '../../components/dashboard/ProfileCard';
 import DocumentVault from '../../components/dashboard/DocumentVault';
 import ManifestTable from '../../components/dashboard/UniversalTable';
-import { User, Car, LayoutDashboard,MapPin,Truck} from 'lucide-react';
-import { Shield, Mail, Phone, Landmark, CheckCircle,UserCheck,UserStar,Settings2 } from 'lucide-react';
+import { User, Car, LayoutDashboard,MapPin,Truck,Activity} from 'lucide-react';
+import { Shield, Mail, Phone, Landmark, CheckCircle,UserCheck,UserStar,Settings2, Database,BookOpen} from 'lucide-react';
 import ProfileUpdateForm from '../../components/ProfileUpdateForm';
 
 
 const AdminNavigationOptions = [
-  { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
-  { label: 'Add Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
+    { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
+    { label: 'Manage Vehicle', path: '/dashboard/admin/vehicles', icon: Car },
+    { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
+    { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
+    { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
 ];
+
 
 const AdminDashboard = () => {
     const { user } = useAuth();
