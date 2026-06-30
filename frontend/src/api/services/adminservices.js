@@ -47,6 +47,8 @@ const adminservices = {
       }
     },
 
+
+    // driver services
     assignVehicle: async (vehicleId, payload) => {
         try {
             // Note the closing trailing slash for absolute routing framework security
@@ -67,6 +69,58 @@ const adminservices = {
         throw error;
       }
     },
+
+
+    adminDispatchList: async () => {
+      try {
+        const response = await apiClient.get('/api/driver/admindispatchlist/');
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching admin dispatch list:', error);
+        throw error;
+      }},
+
+
+
+    //employee services
+    getUserList: async () => {
+      try {
+        const response = await apiClient.get('/api/userprofile/admin/getlist/');
+        return response.data;
+      }catch (error) {
+        console.error('Error fetching user list:', error);
+        throw error;
+      }},
+
+      approvalStatusUpdate: async (userId, payload) => {
+        try {
+          const response = await apiClient.patch(`/api/userprofile/admin/manageprofiles/${userId}/`, payload);
+          return response.data;
+        } catch (error) {
+          console.error(`Error updating approval status for user ID #${userId}:`, error);
+          throw error;
+        }},
+
+
+        updateUserProfile: async (userId, payload) => {
+          try {
+            const response = await apiClient.patch(`/api/userprofile/admin/manageprofiles/${userId}/`, payload);
+            return response.data;
+          } catch (error) {
+            console.error(`Error updating user profile for user ID #${userId}:`, error);
+            throw error;
+          }
+        },
+        deleteUserProfile: async (userId) => {
+          try {
+            const response = await apiClient.delete(`/api/userprofile/admin/manageprofiles/${userId}/`);
+            return response.data;
+          } catch (error) {
+            console.error(`Error deleting user profile for user ID #${userId}:`, error);
+            throw error;
+          }
+        }
+
 
 
 

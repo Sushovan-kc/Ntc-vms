@@ -17,6 +17,8 @@ import AdminBookingPage from '../pages/admin/AdminManageBookingPage'
 import AdminLayout from '../components/AdminLayout'
 import DriverLayout from '../components/DriverLayout'
 import EmployeeLayout from '../components/EmployeeLayout'
+import AdminUserPage from '../pages/admin/AdminUserPage'
+import Register from '../pages/Register'
 
 function getLocalAuth() {
   try {
@@ -98,6 +100,7 @@ const Approuter = () => {
   return (
     <Routes>
       <Route path="/" element={<RootEntry />} />
+      <Route path="/register" element={<Register />} />
 
       {/* 🟢 Routes configured with strict lowercase role expectations */}
       <Route path="/dashboard/employee"
@@ -131,6 +134,9 @@ const Approuter = () => {
         <Route path="vehicles" element={<AdminVehiclePage />} /> 
         <Route path="addvehicles" element={<AdminAddVehicle />} /> 
         <Route path="bookings" element={<AdminBookingPage />} /> 
+        <Route path="employeeprofiles" element={<AdminUserPage />} />
+        <Route path="dispatch" element={<AdminDispatchPage />} />        
+
       </Route>
 
  

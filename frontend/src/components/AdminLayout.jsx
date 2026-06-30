@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Fix path if necessary
 import Sidebar from './Sidebar';
 import Header from './dashboard/Header';
-import { LayoutDashboard, Car, Database, BookOpen, Activity } from 'lucide-react';
+import { LayoutDashboard, Car, Database, BookOpen, Activity,CircleUserRound } from 'lucide-react';
 
 const AdminNavigationOptions = [
     { label: 'Admin Profile', path: '/dashboard/admin/', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const AdminNavigationOptions = [
     { label: 'Add Vehicle', path: '/dashboard/admin/addvehicles', icon: Database },
     { label: 'Manage Bookings', path: '/dashboard/admin/bookings', icon: BookOpen },
     { label: 'Manage Dispatch', path: '/dashboard/admin/dispatch', icon: Activity },
+    { label: 'Manage Employee Profiles', path: '/dashboard/admin/employeeprofiles', icon: CircleUserRound },
 ];
 
 const AdminLayout = () => {

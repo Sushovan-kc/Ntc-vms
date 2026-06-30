@@ -106,6 +106,7 @@ class DispatchSerializers(serializers.ModelSerializer):
     booking_purpose = serializers.ReadOnlyField(source='booking.purpose')
     booking_user = serializers.ReadOnlyField(source='booking.user.username')
     booking_status = serializers.ReadOnlyField(source='booking.status')
+    dispatch_status = serializers.ChoiceField(choices=Dispatches.DispatchStatusChoices.choices)
 
     class Meta:
         model = Dispatches
@@ -114,7 +115,7 @@ class DispatchSerializers(serializers.ModelSerializer):
             'id', 'booking', 'booking_user', 'booking_purpose',
             'booking_status', 'driver', 'driver_name', 'driver_status',
             'vehicle', 'vehicle_manufacturer', 'vehicle_model', 'vehicle_license_plate',
-            'booking_start_time', 'booking_end_time'
+            'booking_start_time', 'booking_end_time', 'dispatch_status'
         ]
         read_only_fields = ['id']
 

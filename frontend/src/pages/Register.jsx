@@ -6,6 +6,7 @@ import PasswordInput from '../components/PasswordInput';
 import RoleDropdown from '../components/RoleDropdown';
 import Loader from '../components/Loader';
 import registerservice from '../api/services/registerservice';
+import {branch} from '../components/BranchDropdown';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const Register = () => {
     first_name: '', 
     last_name: '', 
     requested_role: '', 
-    phone_number: ''
+    phone_number: '',
+    branch:'',
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -76,7 +78,8 @@ const Register = () => {
       first_name: formData.first_name.trim(),
       last_name: formData.last_name.trim(),
       requested_role: finalRole, // Sends exact match to Django
-      phone_number: formData.phone_number.trim()
+      phone_number: formData.phone_number.trim(),
+      branch:formData.branch.trim()
     };
 
     try {
@@ -105,7 +108,7 @@ const Register = () => {
   return (
     <AuthLayout>
       <div className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,56,147,0.08)] w-full p-8 lg:p-10 mx-auto max-w-[95%]">
-        <h2 className="text-[#212529] font-bold text-[1.75rem] mb-6 text-center leading-tight">Create Account</h2>
+        <h2 className="text-ntc-dark-text font-bold text-[1.75rem] mb-6 text-center leading-tight">Create Account</h2>
         
         {successMsg && (
           <div className="mb-4 p-3 bg-green-50 border border-emerald-500/20 text-emerald-700 rounded-lg text-sm font-medium">
@@ -113,7 +116,7 @@ const Register = () => {
           </div>
         )}
         {errors.general && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-500/20 text-[#dc3545] rounded-lg text-sm font-medium">
+          <div className="mb-4 p-3 bg-red-50 border border-red-500/20 text-ntc-danger rounded-lg text-sm font-medium">
             {errors.general}
           </div>
         )}
@@ -134,6 +137,14 @@ const Register = () => {
           <div className="mb-4">
             <RoleDropdown value={formData.requested_role} onChange={handleChange} error={errors.requested_role} />
           </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-ntc-dark-text mb-2">Branch *</label>
+              <select className="form-select w-full rounded-b-sm" name="branch" value={formData.branch} onChange={handleChange}>
+                {branch.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
             <PasswordInput label="Password" name="password" value={formData.password} onChange={handleChange} error={errors.password} required />
@@ -142,7 +153,7 @@ const Register = () => {
 
           <button 
             type="submit" 
-            className="w-full mt-4 block bg-[#003893] text-white p-3 rounded-lg font-semibold transition-all duration-300 hover:bg-[#002663] focus:bg-[#002663] active:bg-[#002663] hover:shadow-[0_4px_12px_rgba(0,56,147,0.2)] disabled:opacity-50 text-center" 
+            className="w-full mt-4 block bg-ntc-blue text-white p-3 rounded-lg font-semibold transition-all duration-300 hover:bg-ntc-blue-hover focus:bg-ntc-blue-hover active:bg-ntc-blue-hover hover:shadow-[0_4px_12px_rgba(0,56,147,0.2)] disabled:opacity-50 text-center" 
             disabled={isLoading}
           >
             {isLoading ? <Loader text="Registering..." /> : "Register Account"}

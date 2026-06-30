@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import RequestForm from '../../components/employee/RequestForm';
 
 
-const VehicleRequest = () => {
+const EmployeeNewBooking = () => {
   const { user } = useAuth();
 
 
@@ -30,4 +30,4 @@ const VehicleRequest = () => {
 };
 
 
-export default VehicleRequest;
+export default  EmployeeNewBooking;

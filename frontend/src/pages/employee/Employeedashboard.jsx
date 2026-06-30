@@ -69,7 +69,7 @@ const EmployeeDashboard = () => {
           icon={CarFront}
           iconBgColor="bg-ntc-blue/10 group-hover:bg-ntc-blue/15"
           iconColor="text-ntc-blue"
-          onClick={() => navigate('/dashboard/employee/bookings')}
+          onClick={() => navigate('/dashboard/employee/booking')}
         />
 
         <ActionHubCard 

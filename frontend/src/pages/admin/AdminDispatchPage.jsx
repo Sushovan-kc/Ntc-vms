@@ -1,8 +1,9 @@
 import { React,useState,useEffect } from 'react'
 import adminservices from '../../api/services/adminservices'
 import { useAuth } from '../../context/AuthContext';
-import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen} from 'lucide-react';
+import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen,ClipboardList} from 'lucide-react';
 import VehicleAddForm from '../../components/vehicle/VehicleAddForm';
+import UniversalTable from '../../components/dashboard/UniversalTable';
 
 
 
@@ -18,12 +19,17 @@ const dispatchColumns = [
     render:(val) => <span className="font-medium text-ntc-dark">{val || 'N/A'}</span>
   },
   { 
-    header: "Destination", 
+    header: "Purpose", 
     key: "booking_purpose",
     // Fixes the empty string fallback
     render: (val) => {
       return val && val.trim() !== "" ? val : "General Operations / Not Specified";
     }
+  },
+  {
+    header:"Driver Assigned",
+    key:"driver_name",
+    render:(val) => <span className="font-medium text-ntc-dark">{val || 'N/A'}</span>
   },
  {
     header: "Assigned Fleet Unit",
@@ -43,9 +49,60 @@ const dispatchColumns = [
       );
     }
   },
+{
+  header: "Operational Schedule Time Slot",
+  key: "time_slot", 
+  render: (_, row) => {
+    // Helper function to format ISO strings cleanly
+    const formatDateTime = (isoString) => {
+      if (!isoString) return { date: 'N/A', time: '00:00' };
+      
+      const dateObj = new Date(isoString);
+      
+      // Formats to: YYYY-MM-DD
+      const dateStr = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(dateObj);
+
+      // Formats to: 24-hour HH:MM
+      const timeStr = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(dateObj);
+
+      return { date: dateStr, time: timeStr };
+    };
+
+    const start = formatDateTime(row.booking_start_time);
+    const end = formatDateTime(row.booking_end_time);
+
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs font-mono">
+        {/* Start Time Slot */}
+        <div className="flex flex-col items-start bg-slate-100 px-2 py-1 rounded shadow-sm border border-slate-200">
+          <span className="text-[10px] text-slate-500 font-sans tracking-tight">{start.date}</span>
+          <span className="font-bold text-slate-800 text-sm"> {start.time}</span>
+        </div>
+
+        <span className="text-gray-400 font-black text-[10px] uppercase tracking-widest px-0.5 text-center sm:self-center">
+          to
+        </span>
+
+        {/* End Time Slot */}
+        <div className="flex flex-col items-start bg-slate-100 px-2 py-1 rounded shadow-sm border border-slate-200">
+          <span className="text-[10px] text-slate-500 font-sans tracking-tight">{end.date}</span>
+          <span className="font-bold text-slate-800 text-sm">{end.time}</span>
+        </div>
+      </div>
+    );
+  }
+},
   { 
-    header: "Booking Status", 
-    key: "booking_status",
+    header: "Dispatch Status", 
+    key: "dispatch_status",
     // Adds beautiful badge styling matching the driver_status from your API
     render: (val) => {
       const normalizedStatus = val?.toUpperCase();
@@ -54,11 +111,11 @@ const dispatchColumns = [
       
       if (normalizedStatus === 'COMPLETED') {
         badgeStyle = "bg-emerald-50 text-ntc-success border-emerald-200";
-      } else if (normalizedStatus === 'ON TRIP') {
+      } else if (normalizedStatus === 'IN PROGRESS') {
         badgeStyle = "bg-amber-50 text-amber-700 border-amber-200";
-      } else if (normalizedStatus === 'AVAILABLE') {
+      } else if (normalizedStatus === 'CANCELLED') {
         // Style for your current API data state
-        badgeStyle = "bg-teal-50 text-teal-700 border-teal-200"; 
+        badgeStyle = "bg-red-50 text-red-700 border-red-200"; 
       }
 
       return (
@@ -69,9 +126,37 @@ const dispatchColumns = [
     }
   }
 ];
+
 const AdminDispatchPage = () => {
 
     const { user } = useAuth();
+    const [dispatches, setDispatches] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+      const hydrateDashboardData = async () => {
+    try {
+      const [dispatchResult] = await Promise.allSettled([
+        adminservices.adminDispatchList()
+      ]);
+
+      if (dispatchResult.status === 'fulfilled') {
+        setDispatches(dispatchResult.value || []);
+      } else {
+        if (dispatchResult.reason.response?.status !== 404) console.error(dispatchResult.reason);
+        setDispatches([]);
+      }
+
+    } catch (err) {
+      console.error("Core engine synchronization exception:", err);
+    } finally {
+      // 🟢 FIX 2: Moved inside finally block to ensure loading state drops even on partial API failures
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) hydrateDashboardData();
+  }, [user]);
   return (
 <>
 
@@ -81,6 +166,13 @@ const AdminDispatchPage = () => {
             Admin Command Center
           </h1>
           </main>
+
+          <UniversalTable 
+                title="Admin Dispatch Manifest Stream" 
+                icon={ClipboardList} 
+                columns={dispatchColumns} 
+                data={dispatches}
+              />
 </>
   )
 }

@@ -36,7 +36,7 @@ const Sidebar = ({ isSidebarOpen, isMobileOpen, setIsMobileOpen, sidebarcomp }) 
         ${isMobileOpen ? 'translate-x-0 w-62.5' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Sidebar Corporate Identity Header */}
-        <div className="h-15 flex items-center justify-between px-5 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
+        <div className="h-15 flex items-center justify-between p-4 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
           <img src={ntclogo} alt="NTC Logo" className="w-9 h-9  rounded-full object-cover transform scale-125" />
           <span>NTC ENTERPRISE</span>
         </div>
@@ -57,7 +57,7 @@ const Sidebar = ({ isSidebarOpen, isMobileOpen, setIsMobileOpen, sidebarcomp }) 
                     : 'text-white/80 border-transparent hover:bg-white/5 hover:text-white hover:border-white/50'
                 }`}
               >
-                {item.icon && <item.icon className="mr-[15px] w-5 h-5 shrink-0" />}
+                {item.icon && <item.icon className="mr-3.75 w-5 h-5 shrink-0" />}
                 <span>{item.label}</span>
               </Link>
             );

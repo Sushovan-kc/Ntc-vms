@@ -1,6 +1,7 @@
 from django.shortcuts import render
+from django.contrib.auth.models import  User
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from .serializers import UserProfileDetailSerializer, UserRegistrationSerializer, userProfileSerializer
+from .serializers import UserProfileDetailSerializer, UserRegistrationSerializer, UserTableSerializer, userProfileSerializer
 from rest_framework.permissions import AllowAny, IsAdminUser,IsAuthenticated
 from rest_framework.views import APIView, Response, status
 from .models import Profile
@@ -114,3 +115,16 @@ class AdminProfileManagementViewSet(ModelViewSet):
         # Override update to pass the request
         kwargs['partial'] = True  # Allow partial updates
         return super().update(request, *args, **kwargs)
+    
+
+
+
+class  UserTableViewset(ReadOnlyModelViewSet):
+    """Admin-only viewset to list all user profiles which do not have a profile table."""
+    permission_classes = [IsAuthenticated, IsBranchAdmin]
+    serializer_class = UserTableSerializer
+    pagination_class = AdminProfileTablePagination
+
+    def get_queryset(self):
+
+        return User.objects.filter(profile__isnull=True)

@@ -11,10 +11,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     # Capture custom profile details
     requested_role = serializers.ChoiceField(choices=Profile.ROLE.choices, default=Profile.ROLE.NOT_ASSIGNED)
     phone_number = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    branch=serializers.CharField(max_length=20,required=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'requested_role', 'phone_number']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'requested_role', 'phone_number','branch']
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -25,6 +26,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Extract profile fields so they aren't passed to the core User model
         requested_role = validated_data.pop('requested_role', Profile.ROLE.NOT_ASSIGNED)
         phone_number = validated_data.pop('phone_number', '')
+        branch=validated_data.pop('branch',None)
 
         # Use an atomic transaction block so if either step fails, everything rolls back safely
         with transaction.atomic():
@@ -43,7 +45,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             Profile.objects.filter(user=user).update(
                 phone_number=phone_number,
                 role=requested_role,
-                role_approved=False
+                role_approved=False,
+                branch=branch
             )
             
         return user
@@ -94,3 +97,12 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
             instance = super().update(instance, validated_data)
             
         return instance
+    
+
+
+class UserTableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # 🟢 Remove 'user' from this array list. 
+        # The 'id' field represents the Django User ID your frontend dropdown needs!
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']

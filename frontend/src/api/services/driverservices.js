@@ -30,6 +30,15 @@ const driverServices = {
         } catch (error) {
             console.error("Error fetching driver dispatches:", error);
             throw error;
+        }},
+
+    updateDispatchStatus: async(dispatchId, newStatus) => {
+        try {
+            const response = await apiClient.patch(`/api/driver/dispatch-status-update/${dispatchId}/`, newStatus);
+            return response.data;
+        } catch (error) {
+            console.error("Error updating dispatch status:", error);
+            throw error;
         }}
 }
 
