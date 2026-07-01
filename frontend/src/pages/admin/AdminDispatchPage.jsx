@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen,ClipboardList} from 'lucide-react';
 import VehicleAddForm from '../../components/vehicle/VehicleAddForm';
 import UniversalTable from '../../components/dashboard/UniversalTable';
+import ActiveDispatchCard from '../../components/driver/ActiveDispatchCard';
 
 
 
@@ -136,7 +137,7 @@ const AdminDispatchPage = () => {
       const hydrateDashboardData = async () => {
     try {
       const [dispatchResult] = await Promise.allSettled([
-        adminservices.adminDispatchList()
+        adminservices.adminDispatchRecordList()
       ]);
 
       if (dispatchResult.status === 'fulfilled') {
@@ -158,23 +159,35 @@ const AdminDispatchPage = () => {
     if (user) hydrateDashboardData();
   }, [user]);
   return (
-<>
+    <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
+      {/* Title Block */}
+      <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
+        <Car className="text-ntc-blue" size={28} />
+        Admin Command Center
+      </h1>
 
-        <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray space-y-6">
-          <h1 className="text-ntc-dark font-black text-2xl tracking-tight flex items-center gap-3">
-            <Car className="text-ntc-blue" size={28} />
-            Admin Command Center
-          </h1>
-          </main>
+      {/* Metrics & Performance Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Active Dispatches Feed component column */}
+        <div className="lg:col-span-1">
+          <ActiveDispatchCard />
+        </div>
 
-          <UniversalTable 
-                title="Admin Dispatch Manifest Stream" 
-                icon={ClipboardList} 
-                columns={dispatchColumns} 
-                data={dispatches}
-              />
-</>
-  )
+        {/* You can add extra analytics counters or summary charts in the other grid slots later
+        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-gray-100 flex items-center justify-center text-gray-400">
+          Analytics Summary Placeholder
+        </div>*/}
+      </div> 
+
+      {/* Main Historical Stream Data Ledger */}
+      <UniversalTable 
+        title="Dispatch Record Table" 
+        icon={ClipboardList} 
+        columns={dispatchColumns} 
+        data={dispatches}
+      />
+    </main>
+  );
 }
 
 export default AdminDispatchPage

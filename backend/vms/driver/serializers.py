@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Dispatches, DriverProfile
+from .models import DispatchRecord, Dispatches, DriverProfile
 from fleet.models import Vehicle
 
 class DriverProfileFirstTimeSetupSerializer(serializers.ModelSerializer):
@@ -175,3 +175,24 @@ class DriverListSerializer(serializers.ModelSerializer):
         return representation
     
     
+
+class DriverDispatchHistorySerializer(serializers.ModelSerializer):
+    driver_name = serializers.ReadOnlyField(source='driver.user.user.username')
+    vehicle_manufacturer = serializers.ReadOnlyField(source='vehicle.manufacturer')
+    vehicle_model = serializers.ReadOnlyField(source='vehicle.model')
+    vehicle_license_plate = serializers.ReadOnlyField(source='vehicle.license_plate')
+    booking_start_time = serializers.ReadOnlyField(source='booking.start_time')
+    booking_end_time = serializers.ReadOnlyField(source='booking.end_time')
+    booking_purpose = serializers.ReadOnlyField(source='booking.purpose')
+    booking_user = serializers.ReadOnlyField(source='booking.user.username')
+    booking_status = serializers.ReadOnlyField(source='booking.status')
+
+    class Meta:
+        model = DispatchRecord
+        fields = [
+            'id', 'booking', 'booking_user', 'booking_purpose',
+            'booking_status', 'driver', 'driver_name',
+            'vehicle', 'vehicle_manufacturer', 'vehicle_model', 'vehicle_license_plate',
+            'booking_start_time', 'booking_end_time', 'dispatch_status'
+        ]
+        read_only_fields = ['id']

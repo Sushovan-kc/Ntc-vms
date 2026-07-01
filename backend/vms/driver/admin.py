@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Dispatches, DriverProfile
+from .models import DispatchRecord, Dispatches, DriverProfile
 # Register your models here.
 
 
@@ -16,3 +16,12 @@ class DispatchesAdmin(admin.ModelAdmin):
     list_filter = ['driver', 'vehicle']
 
 admin.site.register(Dispatches, DispatchesAdmin)
+
+
+class DispatchRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'driver', 'vehicle', 'booking', 'dispatch_status')
+    search_fields = ('driver__user__user__username', 'vehicle__license_plate', 'booking__id')
+    list_filter = ['dispatch_status', 'driver', 'vehicle']
+
+
+admin.site.register(DispatchRecord, DispatchRecordAdmin)

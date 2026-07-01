@@ -208,7 +208,7 @@ const driverFields = [
           </div>
 
           <UniversalTable 
-                title="Dispatch Manifests" 
+                title="Current Dispatches" 
                 icon={ClipboardList} 
                 columns={dispatchColumns} 
                 data={dispatches}

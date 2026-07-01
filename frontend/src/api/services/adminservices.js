@@ -80,6 +80,15 @@ const adminservices = {
         throw error;
       }},
 
+      adminDispatchRecordList: async () => {
+        try {
+          const response = await apiClient.get('/api/driver/dispatchrecordlist/');
+          return response.data;
+        } catch (error) {
+          console.error('Error fetching admin dispatch record list:', error);
+          throw error;
+        }},
+
 
 
     //employee services

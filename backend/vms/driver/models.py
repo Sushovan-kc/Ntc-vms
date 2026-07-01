@@ -61,6 +61,6 @@ class DispatchRecord(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
         
     dispatch_status = models.CharField(max_length=20, choices=DispatchStatusChoices.choices, default=DispatchStatusChoices.PENDING)
-    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='dispatches',null=True, blank=True)
+    driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='dispatchrecord',null=True, blank=True)
     vehicle = models.ForeignKey('fleet.Vehicle', on_delete=models.CASCADE)
     booking=models.ForeignKey('bookings.Booking', on_delete=models.CASCADE)

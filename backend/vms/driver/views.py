@@ -3,12 +3,12 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Dispatches, DriverProfile
-from .serializers import DispatchSerializers, DriverDispatchStatusUpdateSerializer, DriverListSerializer, DriverProfileFirstTimeSetupSerializer
+from .models import DispatchRecord, Dispatches, DriverProfile
+from .serializers import DispatchSerializers, DriverDispatchHistorySerializer, DriverDispatchStatusUpdateSerializer, DriverListSerializer, DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
-from core.filters import BranchFilterBackend
+from core.filters import BranchFilterBackend, DispatchBranchFilterBackend
 from core.pagination import AdminProfileTablePagination
 from fleet.models import Vehicle
 from .serializers import AdminDriverProfileManagementSerializer, DriverVehicleInfoSerializer
@@ -188,3 +188,42 @@ class DriverListViewSet(ModelViewSet):
             "drivers": main_serializer.data,
             "unassigned_drivers": unassigned_serializer.data
         }, status=status.HTTP_200_OK)
+
+
+
+# driver/views.py
+
+class DriverDispatchHistoryViewSet(ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DriverDispatchHistorySerializer
+    filter_backends = [DispatchBranchFilterBackend]
+
+    def get_queryset(self):
+        """
+        Managers see all history records. 
+        Drivers see only their own completed history records.
+        """
+        user = self.request.user
+        
+        # FIX: Point this directly to DispatchRecord, not Dispatches!
+        queryset = DispatchRecord.objects.select_related(
+            'driver__user__user', 
+            'vehicle', 
+            'booking__user'
+        )
+
+        # 1. Check if the user is a Manager or Admin
+        is_manager_or_admin = (
+            hasattr(user, 'profile') and 
+            user.profile.role in ['super admin', 'admin', 'employee']
+        )
+
+        if is_manager_or_admin:
+            return queryset
+
+        # 2. If they are a Driver, safely filter by their DriverProfile ID
+        if hasattr(user, 'profile') and hasattr(user.profile, 'driver_profile'):
+            return queryset.filter(driver__id=user.profile.driver_profile.id)
+
+        # 3. Fallback
+        return DispatchRecord.objects.none()

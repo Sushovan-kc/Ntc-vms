@@ -27,3 +27,26 @@ class BranchFilterBackend(BaseFilterBackend):
         
         # Safe default fallback block
         return queryset.none()
+
+
+
+
+from rest_framework.filters import BaseFilterBackend
+
+class DispatchBranchFilterBackend(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        
+        # 1. Unauthenticated users or users missing a profile get nothing
+        if not user.is_authenticated or not hasattr(user, 'profile'):
+            return queryset.none()
+            
+        # 2. Get the branch from the logged-in user's profile
+        user_branch = getattr(user.profile, 'branch', None)
+        
+        if user_branch:
+            # Cleanly filters your DispatchRecord entries by their booking branch location
+            return queryset.filter(booking__branch=user_branch)
+            
+        # 3. Fallback: If a user has a profile but no branch assigned, restrict access
+        return queryset.none()
