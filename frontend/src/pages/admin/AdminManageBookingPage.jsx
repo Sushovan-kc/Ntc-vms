@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User, Car, LayoutDashboard,MapPin,Truck,Database,Activity,BookOpen,ClipboardList,NotebookPen } from 'lucide-react';
 import VehicleAddForm from '../../components/vehicle/VehicleAddForm';
 import UniversalTable from '../../components/dashboard/UniversalTable';
-import bookingServices from '../../api/services/bookingServices'
+import bookingServices from '../../api/services/bookingservices'
 import PendingBookingsSection from '../../components/booking/PendingBookingsSection';
 
 
