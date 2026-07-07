@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
-import axios from 'axios';
 import L from 'leaflet';
+import apiClient from '../../api/client';
+import { buildWebSocketUrl } from '../../api/runtime';
 
 // 🐛 Leaflet Fix: Webpack/Vite messes up default icon asset paths. This restores them manually.
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -32,7 +33,7 @@ export default function LiveTrackingMap({ dispatchId }) {
 
   useEffect(() => {
     // 1. Fetch historical route coordinates logged up to this point using Axios
-    axios.get(`http://127.0.0{dispatchId}/`)
+    apiClient.get(`/api/driver/tracking/history/${dispatchId}/`)
       .then((response) => {
         const coords = response.data.coordinates;
         if (coords && coords.length > 0) {
@@ -47,7 +48,7 @@ export default function LiveTrackingMap({ dispatchId }) {
       });
 
     // 2. Connect directly to the Daphne ASGI WebSocket room for this unique trip
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/tracking/${dispatchId}/`);
+  const ws = new WebSocket(buildWebSocketUrl(`/ws/tracking/${dispatchId}/`));
 
     ws.onmessage = (event) => {
       const payload = JSON.parse(event.data);

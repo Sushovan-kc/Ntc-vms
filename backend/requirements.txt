@@ -1,0 +1,22 @@
+Django==6.0.5
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.2
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.5.1
+django-cors-headers==4.9.0
+django-redis==7.0.0
+celery==5.6.3
+redis==8.0.1
+psycopg[binary]==3.3.4
+Pillow==12.2.0
+asgiref==3.11.1
+amqp==5.3.1
+billiard==4.2.4
+kombu==5.6.2
+vine==5.1.0
+
+# Production deployment
+gunicorn
+dj-database-url
+whitenoise

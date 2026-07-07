@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet
 import { Navigation, Radio, MapPin, ArrowLeft, RefreshCw, Car, Clock, Activity } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client'; // Adjust path to target your configured wrapper instance
+import { buildWebSocketUrl } from '../../api/runtime';
 import adminservices from '../../api/services/adminservices';
 import L from 'leaflet';
 
@@ -86,7 +87,7 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
       });
 
     // 2. Establish live WebSocket communication line targeting your Daphne ASGI server channels
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/tracking/${dispatchId}/`);
+    const ws = new WebSocket(buildWebSocketUrl(`/ws/tracking/${dispatchId}/`));
 
     ws.onmessage = (event) => {
       const payload = JSON.parse(event.data);

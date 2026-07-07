@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { getApiBaseUrl } from './runtime';
 
 // 1. Initialize the custom configuration instance
 const apiClient = axios.create({
-  baseURL:  'http://127.0.0.1:8000/', // Pulls seamlessly from your .env
+  baseURL: getApiBaseUrl(),
   timeout: 10000,                        // Cancels request if backend takes > 10 seconds
   headers: {
     'Content-Type': 'application/json',
