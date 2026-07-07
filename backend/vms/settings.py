@@ -155,7 +155,7 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "https://ntc-vms.onrender.com",
+    "https://ntc-vms-frontend.onrender.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://172.16.50.88:5173",
