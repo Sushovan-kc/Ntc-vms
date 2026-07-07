@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = '/';
+const DEFAULT_API_BASE_URL = 'https://ntc-vms.onrender.com';
 
 export function getApiBaseUrl() {
   const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();

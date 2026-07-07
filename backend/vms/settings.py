@@ -91,11 +91,17 @@ ASGI_APPLICATION = 'vms.asgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:sushovan%40123@127.0.0.1:5432/vehicle_system_db',
+        # Pulls the transaction-pooler link on Render, falls back to your local Postgres database
+        default=os.environ.get('DATABASE_URL', 'postgresql://postgres:sushovan%40123@127.0.0.1:5432/vehicle_system_db'),
         conn_max_age=600,
     )
 }
 
+# When running migrations on Render, switch to the direct session connection string
+if os.environ.get('RUNNING_MIGRATION') == 'True':
+    DATABASES['default'] = dj_database_url.config(
+        default=os.environ.get('DIRECT_URL')
+    )
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
