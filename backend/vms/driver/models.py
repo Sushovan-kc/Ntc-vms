@@ -1,3 +1,6 @@
+from django.core.cache import cache
+
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from profile.models import Profile
@@ -24,6 +27,9 @@ class DriverProfile(models.Model):
         return f"Driver: {self.user.user.username} - {self.driver_status}"
     
     def save(self, *args, **kwargs):
+
+        if self.license_number is '':
+            self.license_number="Not uploaded"
         if self.user.branch is not None:
             self.branch = self.user.branch
         else:
@@ -45,11 +51,52 @@ class Dispatches(models.Model):
 
 
     def save(self, *args, **kwargs):
-       if self.dispatch_status == self.DispatchStatusChoices.COMPLETED or self.dispatch_status == self.DispatchStatusChoices.CANCELLED:
+        # 1. Handle Redis sync operations *before* deleting completed/cancelled objects
+        # We fetch the primary key string or integer of the related vehicle object
+        cache_key = f"active_driver_trip:{self.driver_id}"
+
+        if self.dispatch_status == self.DispatchStatusChoices.IN_PROGRESS:
+            # Activate tracking state instantly in Redis memory
+            cache.set(cache_key,  {
+                "dispatch_id": self.id, 
+                "booking_id": self.booking_id,
+                "vehicle_id": self.vehicle_id
+            }, timeout=None)
+            
+            # Ensure an active DispatchRecord exists so telemetry can be appended
+            DispatchRecord.objects.get_or_create(
+                booking=self.booking,
+                dispatch_status=self.DispatchStatusChoices.IN_PROGRESS,
+                defaults={
+                    'driver': self.driver,
+                    'vehicle': self.vehicle
+                }
+            )
+        else:
+            # If changed to PENDING, COMPLETED, or CANCELLED, remove tracking keys immediately
+            cache.delete(cache_key)
+
+
+        if self.dispatch_status == self.DispatchStatusChoices.COMPLETED or self.dispatch_status == self.DispatchStatusChoices.CANCELLED:
+            # Mark the persistent DispatchRecord archive row with the final status
+            try:
+                record = DispatchRecord.objects.get(
+                    booking=self.booking,
+                    dispatch_status=self.DispatchStatusChoices.IN_PROGRESS
+                )
+                record.dispatch_status = self.dispatch_status
+                record.save(update_fields=['dispatch_status'])
+
+                # Fire the async Celery task to calculate and persist distance
+                from .tasks import compute_and_save_distance
+                compute_and_save_distance.delay(record.pk)
+            except DispatchRecord.DoesNotExist:
+                pass
+
             if self.pk:
                 self.delete()
             return
-       super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 
@@ -64,3 +111,5 @@ class DispatchRecord(models.Model):
     driver = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='dispatchrecord',null=True, blank=True)
     vehicle = models.ForeignKey('fleet.Vehicle', on_delete=models.CASCADE)
     booking=models.ForeignKey('bookings.Booking', on_delete=models.CASCADE)
+    route_history = models.JSONField(default=list, blank=True)
+    distance_traveled_km = models.FloatField(default=0.0, blank=True)

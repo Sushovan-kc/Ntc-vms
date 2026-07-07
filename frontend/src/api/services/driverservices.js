@@ -39,7 +39,32 @@ const driverServices = {
         } catch (error) {
             console.error("Error updating dispatch status:", error);
             throw error;
-        }}
+        }},
+    ingestTelemetry: async (driverId, latitude, longitude) => {
+    const response = await apiClient.post('/api/driver/tracking/ingest/', {
+      driver_id: driverId,
+      latitude: latitude,
+      longitude: longitude,
+    });
+    return response.data;
+  },
+
+  /**
+   * PATCH - Submit operational telemetry data for the driver's assigned vehicle.
+   * Accepted fields: kilometers_driven, mileage, last_fuel_date, last_service_date
+   *
+   * @param {Object} telemetryData - Object with one or more accepted telemetry keys.
+   * @returns {Promise} Resolves to the backend confirmation payload.
+   */
+  updateVehicleTelemetry: async (telemetryData) => {
+    try {
+      const response = await apiClient.patch('/api/driver/vehicle/telemetry/update/', telemetryData);
+      return response.data;
+    } catch (error) {
+      console.error('Error submitting vehicle telemetry update:', error);
+      throw error;
+    }
+  },
 }
 
-export default driverServices;
+export default driverServices;

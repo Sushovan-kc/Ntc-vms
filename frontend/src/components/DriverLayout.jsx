@@ -3,13 +3,13 @@ import { Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Fix path if necessary
 import Sidebar from './Sidebar';
 import Header from './dashboard/Header';
-import { LayoutDashboard, Car, Database, BookOpen, Activity,MapPin } from 'lucide-react';
+import { LayoutDashboard, Car, Database, BookOpen, Activity,MapPinned,MapPin } from 'lucide-react';
 
 
 const DRIVER_NAVIGATION_OPTIONS = [
     { label: 'Driver Profile', path: '/dashboard/driver', icon: LayoutDashboard },
     { label: 'My Vehicle', path: '/dashboard/driver/myvehicle', icon: Car },
-    { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin }
+    { label: 'My Dispatches', path: '/dashboard/driver/dispatches', icon: MapPin },
 ];
 
 const DriverLayout = () => {

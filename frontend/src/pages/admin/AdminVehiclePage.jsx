@@ -110,7 +110,7 @@ const handleCommitAssignment = async (vehicleId, selectedDriver) => {
                     value: vehicle.license_plate, 
                     icon: Hash, 
                     render: (val) => (
-                      <span className="font-mono text-xs font-bold bg-ntc-dark text-white px-2 py-0.5 rounded shadow-inner tracking-wider">
+                      <span className="font-mono text-xs font-bold bg-ntc-dark text-black px-2 py-0.5 rounded shadow-inner tracking-wider">
                         {val || '—'}
                       </span>
                     ) 

@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
       
       // Construct the payload structure your JS version maps out
       const userPayload = {
+        user_id: responseData.user_id,
         role: responseData.Role,             
         is_approved: responseData.is_approved,
         userbranch: responseData.branch_name,

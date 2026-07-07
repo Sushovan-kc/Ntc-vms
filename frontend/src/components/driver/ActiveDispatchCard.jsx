@@ -1,46 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Car, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+import { Car, Clock, RefreshCw, AlertCircle, Navigation } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import adminservices from '../../api/services/adminservices';
 
 export default function ActiveDispatchCard() {
+  const navigate = useNavigate();
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
-    const fetchActiveDispatches = async () => {
+  const fetchActiveDispatches = async () => {
     setLoading(true);
     setError(null);
 
-     try{
+    try {
+      const [dispatchResult] = await Promise.allSettled([adminservices.adminDispatchList()]);
 
-            const [dispatchResult] = await Promise.allSettled([adminservices.adminDispatchList()]);
-
-                    if (dispatchResult.status === 'fulfilled') {
-                        setDispatches(dispatchResult.value || []);
-                    } else {
-                        if (dispatchResult.reason.response?.status !== 404) console.error(dispatchResult.reason);
-                        setDispatches([]);
-                    }
-
-                    } catch (err) {
-                    console.error("Core engine synchronization exception:", err);
-                    } finally {
-                    // 🟢 FIX 2: Moved inside finally block to ensure loading state drops even on partial API failures
-                    setLoading(false);
-                    }
-                };
-
+      if (dispatchResult.status === 'fulfilled') {
+        setDispatches(dispatchResult.value || []);
+      } else {
+        if (dispatchResult.reason.response?.status !== 404) console.error(dispatchResult.reason);
+        setDispatches([]);
+      }
+    } catch (err) {
+      console.error("Core engine synchronization exception:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchActiveDispatches();
-    // Optional: Poll every 30 seconds for live updates
     const interval = setInterval(fetchActiveDispatches, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    /* FIXED: Changed h-100 to an explicit h-[550px] and w-auto to w-full for a robust layout */
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[350px] w-full">
       
       {/* Card Header */}
@@ -63,7 +58,6 @@ export default function ActiveDispatchCard() {
       </div>
 
       {/* Card Body */}
-      {/* FIXED: Changed w-1/2 to w-full so text doesn't wrap or overlap tightly. Keeps overflow-y-auto for smooth scrolling. */}
       <div className="p-4 overflow-y-auto flex-1 space-y-3 bg-white w-full scrollbar-thin">
         {loading && (!dispatches || dispatches.length === 0) ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
@@ -92,7 +86,6 @@ export default function ActiveDispatchCard() {
                   <Car size={20} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  {/* Clean text hierarchy with layout protection wrapping */}
                   <div className="text-sm font-bold text-gray-900 flex items-center gap-2 flex-wrap">
                     <span>{dispatch.vehicle_manufacturer} {dispatch.vehicle_model}</span>
                     <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded font-mono uppercase">
@@ -114,6 +107,15 @@ export default function ActiveDispatchCard() {
                 }`}>
                   {dispatch.dispatch_status === 'IN_PROGRESS' ? 'On Route' : 'Dispatched'}
                 </span>
+                {dispatch.dispatch_status === 'IN_PROGRESS' && (
+                  <button
+                    onClick={() => navigate(`/dashboard/admin/livetracking/${dispatch.id}`)}
+                    className="flex items-center gap-1 mt-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    <Navigation size={10} className="rotate-45" />
+                    Track Live
+                  </button>
+                )}
                 <span className="text-[10px] font-bold text-gray-400 font-mono">
                   Ref: #{dispatch.booking}
                 </span>

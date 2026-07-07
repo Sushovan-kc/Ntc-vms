@@ -1,5 +1,8 @@
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.views import APIView
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,9 +13,10 @@ from rest_framework.exceptions import NotFound
 from core.permissions import IsBranchAdmin,IsDriver
 from core.filters import BranchFilterBackend, DispatchBranchFilterBackend
 from core.pagination import AdminProfileTablePagination
-from fleet.models import Vehicle
+from fleet.models import Vehicle, VehicleInfo
 from .serializers import AdminDriverProfileManagementSerializer, DriverVehicleInfoSerializer
-
+from .tasks import log_telemetry_data
+from django.core.cache import cache
 
 # Create your views here.
 
@@ -227,3 +231,170 @@ class DriverDispatchHistoryViewSet(ReadOnlyModelViewSet):
 
         # 3. Fallback
         return DispatchRecord.objects.none()
+
+
+
+
+class DriverTelemetryIngestView(APIView):
+    def post(self, request):
+        # Extract fields from the driver app's background GPS payload
+        driver_id = request.data.get('driver_id') 
+        lat = float(request.data.get('latitude'))
+        lon = float(request.data.get('longitude'))
+
+        # 1. Zero-DB-Hit Check: Verify if this driver is actively en-route
+        trip_info = cache.get(f"active_driver_trip:{driver_id}")
+        if not trip_info:
+            return Response({"status": "ignored", "message": "No active trip for this driver"}, status=200)
+
+        dispatch_id = trip_info['dispatch_id']
+        booking_id = trip_info['booking_id']
+
+        # 2. Push directly to WebSockets room so dispatchers can watch this specific journey live
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"dispatch_{dispatch_id}",
+            {"type": "broadcast_location", "data": {"lat": lat, "lon": lon, "driver_id": driver_id}}
+        )
+
+        # 3. Offload coordinate array logging securely to Celery
+        log_telemetry_data.delay(booking_id, lat, lon)
+        
+        return Response({"status": "processed"}, status=202)
+    
+
+
+
+class FetchRouteHistoryView(APIView):
+    def get(self, request, dispatch_id):
+        try:
+            # 1. Look up the active Dispatch row to grab its immutable booking relation
+            dispatch = Dispatches.objects.get(id=dispatch_id)
+            booking_id = dispatch.booking_id
+            
+            # 2. Query the DispatchRecord that holds the running trail array logs
+            record = DispatchRecord.objects.get(booking_id=booking_id, dispatch_status='IN_PROGRESS')
+            
+            # 3. Return the JSON array directly to the React application mapping engine
+            # The format is a nested array: [[lat, lon], [lat, lon], [lat, lon]]
+            return Response({"coordinates": record.route_history}, status=200)
+            
+        except Dispatches.DoesNotExist:
+            # Fallback: If the active trip was already completed or deleted from Dispatches,
+            # we can attempt to check DispatchRecord for old archive records directly
+            try:
+                # Assuming dispatch_id maps or can be tracked via historical indices
+                record = DispatchRecord.objects.get(id=dispatch_id)
+                return Response({"coordinates": record.route_history}, status=200)
+            except DispatchRecord.DoesNotExist:
+                return Response({"coordinates": []}, status=200)
+                
+        except DispatchRecord.DoesNotExist:
+            # If the record row exists but no GPS data has hit it yet, return a clean empty list
+            return Response({"coordinates": []}, status=200)
+
+
+class DriverAssetTelemetryUpdateView(APIView):
+    """
+    PATCH endpoint allowing the authenticated driver to submit operational
+    telemetry updates (e.g. odometer reading, fuel level) onto their
+    currently assigned vehicle's VehicleInfo record.
+
+    Accepted PATCH fields (all optional):
+        - kilometers_driven (int)  : current odometer reading
+        - mileage           (int)  : fuel efficiency reading
+        - last_fuel_date    (date) : ISO date of last refuel  e.g. "2026-07-06"
+        - last_service_date (date) : ISO date of last service e.g. "2026-07-06"
+    """
+    permission_classes = [IsAuthenticated, IsDriver]
+
+    ALLOWED_FIELDS = {'kilometers_driven', 'mileage', 'last_fuel_date', 'last_service_date'}
+
+    def patch(self, request):
+        # 1. Walk the relationship chain to find the driver's assigned vehicle
+        try:
+            driver_profile = request.user.profile.driver_profile
+        except AttributeError:
+            return Response(
+                {"detail": "Driver profile not found for your account."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            vehicle_info = driver_profile.AssignedVehicle.info
+        except (AttributeError, VehicleInfo.DoesNotExist):
+            return Response(
+                {"detail": "No vehicle or vehicle info record is currently assigned to your profile."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 2. Filter the incoming payload to only the permitted telemetry fields
+        update_data = {
+            key: value
+            for key, value in request.data.items()
+            if key in self.ALLOWED_FIELDS
+        }
+
+        if not update_data:
+            return Response(
+                {"detail": f"No valid telemetry fields provided. Accepted fields: {', '.join(sorted(self.ALLOWED_FIELDS))}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3. Apply and persist updates
+        for field, value in update_data.items():
+            setattr(vehicle_info, field, value)
+
+        try:
+            vehicle_info.save(update_fields=list(update_data.keys()))
+        except Exception as exc:
+            return Response(
+                {"detail": f"Failed to save telemetry data: {str(exc)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "status": "updated",
+                "message": "Vehicle telemetry metrics saved successfully.",
+                "updated_fields": update_data,
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+class HistoricalDispatchRouteView(APIView):
+    """
+    GET endpoint for managers/admins to retrieve the GPS coordinate trail
+    stored inside a completed or cancelled DispatchRecord's route_history field.
+
+    Accepts:
+        record_id (int): Primary key of the DispatchRecord to fetch.
+
+    Returns:
+        coordinates   : [[lat, lon], ...] array
+        total_points  : integer count of logged waypoints
+        distance_km   : computed total distance in km
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, record_id):
+        try:
+            record = DispatchRecord.objects.select_related('driver', 'vehicle', 'booking').get(pk=record_id)
+        except DispatchRecord.DoesNotExist:
+            return Response(
+                {"detail": f"No dispatch record found with ID {record_id}."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        coordinates = record.route_history or []
+        return Response(
+            {
+                "record_id": record.pk,
+                "dispatch_status": record.dispatch_status,
+                "coordinates": coordinates,
+                "total_points": len(coordinates),
+                "distance_km": record.distance_traveled_km,
+            },
+            status=status.HTTP_200_OK
+        )

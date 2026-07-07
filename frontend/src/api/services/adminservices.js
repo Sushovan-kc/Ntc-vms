@@ -69,8 +69,6 @@ const adminservices = {
         throw error;
       }
     },
-
-
     adminDispatchList: async () => {
       try {
         const response = await apiClient.get('/api/driver/admindispatchlist/');
@@ -83,6 +81,14 @@ const adminservices = {
       adminDispatchRecordList: async () => {
         try {
           const response = await apiClient.get('/api/driver/dispatchrecordlist/');
+          return response.data;
+        } catch (error) {
+          console.error('Error fetching admin dispatch record list:', error);
+          throw error;
+        }},
+
+        getDriverProfileList:async ()=>{
+          try{ const response = await apiClient.get('api/driver/admin/getlist');
           return response.data;
         } catch (error) {
           console.error('Error fetching admin dispatch record list:', error);

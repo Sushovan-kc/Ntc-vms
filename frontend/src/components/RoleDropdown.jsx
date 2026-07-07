@@ -49,7 +49,7 @@ const RoleDropdown = ({ value, onChange, error, excludeRoles = [] }) => {
   return (
     <div className="mb-4">
       {/* 🟢 FIXED: Adjusted text sizing and weights to match original design framework */}
-      <label className="block text-sm font-semibold text-[#212529] mb-2">
+      <label className="block text-sm font-semibold text-ntc-dark-text mb-2">
         Requested Role *
       </label>
       
@@ -64,7 +64,7 @@ const RoleDropdown = ({ value, onChange, error, excludeRoles = [] }) => {
               // 🟢 FIXED: Restored original selection active frames using inline border rings and shadow offsets
               className={`flex flex-wrap gap-2 items-center justify-center p-3 text-center h-full rounded-lg border-2 shadow-sm cursor-pointer select-none transition-all duration-200 ease-in-out
                 ${isSelected 
-                  ? 'border-[#003893] bg-[#e6eef7]/40 text-[#003893]' 
+                  ? 'border-ntc-blue bg-ntc-light-blue/40 text-ntc-blue' 
                   : 'border-gray-200 bg-white hover:border-gray-300 text-gray-500'
                 }`}
             >

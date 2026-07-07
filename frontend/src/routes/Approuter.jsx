@@ -18,7 +18,10 @@ import AdminLayout from '../components/AdminLayout'
 import DriverLayout from '../components/DriverLayout'
 import EmployeeLayout from '../components/EmployeeLayout'
 import AdminUserPage from '../pages/admin/AdminUserPage'
+import AdminDriverPage from '../pages/admin/AdminDriverPage'
 import Register from '../pages/Register'
+import AdminTrackingPage from '../pages/admin/AdminTrackingPage'
+import AdminHistoricalTrackingPage from '../pages/admin/AdminHistoricalTrackingPage'
 
 function getLocalAuth() {
   try {
@@ -121,6 +124,7 @@ const Approuter = () => {
       <Route index element={<DriverDashboard />} />
       <Route path="myvehicle" element={<DriverVehiclePage />} />
       <Route path="dispatches" element={<DriverDispatchPage />} />
+
       </Route>
       
 
@@ -134,8 +138,14 @@ const Approuter = () => {
         <Route path="vehicles" element={<AdminVehiclePage />} /> 
         <Route path="addvehicles" element={<AdminAddVehicle />} /> 
         <Route path="bookings" element={<AdminBookingPage />} /> 
-        <Route path="employeeprofiles" element={<AdminUserPage />} />
+        <Route path="userprofiles" element={<AdminUserPage />} />
         <Route path="dispatch" element={<AdminDispatchPage />} />        
+        <Route path="driverprofiles" element={<AdminDriverPage />} />        
+        <Route path="livetracking" element={<AdminTrackingPage />} />
+        <Route path="livetracking/:dispatchId" element={<AdminTrackingPage />} />
+
+        {/* Feature 2: Historical route polyline map for completed/cancelled trip records */}
+        <Route path="routehistory/:recordId" element={<AdminHistoricalTrackingPage />} />
 
       </Route>
 

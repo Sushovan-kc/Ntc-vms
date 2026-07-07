@@ -52,7 +52,7 @@ const UniversalVehicleCard = ({
             {metrics.map((metric, idx) => (
               <div key={idx} className="min-w-0">
                 <span className="text-[9px] text-ntc-muted font-bold uppercase tracking-wider block">{metric.label}</span>
-                <span className="text-xs font-black text-ntc-dark truncate block mt-0.5">{metric.value || '—'}</span>
+                <span className="text-xs font-black text-black truncate block mt-0.5">{metric.value || '—'}</span>
               </div>
             ))}
           </div>
@@ -66,7 +66,7 @@ const UniversalVehicleCard = ({
                 {spec.icon && <spec.icon size={14} className="text-ntc-blue" />}
                 <span>{spec.label}</span>
               </div>
-              <div className="text-xs font-bold text-ntc-dark text-right flex justify-end items-center min-w-0">
+              <div className="text-xs font-bold text-ntc-blue text-right flex justify-end items-center min-w-0">
                 {spec.render ? spec.render(spec.value) : (spec.value || '—')}
               </div>
             </div>

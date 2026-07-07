@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { Shield, HelpCircle, Car, Calendar, Clock, Play, CheckCircle } from 'lucide-react';
+import { Shield, HelpCircle, Car, Calendar, Clock, Play, CheckCircle, ChevronDown, ChevronUp, Gauge, Fuel, Wrench, Send } from 'lucide-react';
 import driverServices from '../../api/services/driverservices';
 
 export default function DispatchCard({ item, onStatusUpdate }) {
   const [isMutating, setIsMutating] = useState(false);
+
+  // --- Telemetry Drawer State ---
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [telemetryForm, setTelemetryForm] = useState({
+    kilometers_driven: '',
+    mileage: '',
+    last_fuel_date: '',
+    last_service_date: '',
+  });
+  const [telemetrySubmitting, setTelemetrySubmitting] = useState(false);
+  const [telemetryFeedback, setTelemetryFeedback] = useState(null); // { type: 'success'|'error', message: string }
 
   // Formatting date string cleanly via built-in localization
   const formatDateTime = (isoString) => {
@@ -25,22 +36,65 @@ export default function DispatchCard({ item, onStatusUpdate }) {
     return `${dateStr} • ${timeStr}`;
   };
 
-  const handleTripAction = async (newStatus) => {
-    setIsMutating(true);
-    try {
-      let updatedData;
-      if (typeof driverServices.updateDispatchStatus === 'function') {
-        updatedData = await driverServices.updateDispatchStatus(item.id, { dispatch_status: newStatus });
-      } 
+const handleTripAction = async (newStatus) => {
+  setIsMutating(true);
+  try {
+    let updatedData;
+    if (typeof driverServices.updateDispatchStatus === 'function') {
+      // Hits your backend patch endpoint: /api/driver/dispatch-status-update/9/
+      updatedData = await driverServices.updateDispatchStatus(item.id, { dispatch_status: newStatus });
+    } 
 
-      if (onStatusUpdate) {
-        onStatusUpdate(item.id, updatedData || { ...item, dispatch_status: newStatus });
-      }
-    } catch (error) {
-      console.error(`Failed to update dispatch status:`, error);
-      alert(`Error updating trip status to ${newStatus}. Please try again.`);
+    if (onStatusUpdate) {
+      // 🌟 FIX: Explicitly ensure dispatch_status is passed down to the parent state!
+      // This protects your state tree even if your backend returns a plain message payload
+      onStatusUpdate(item.id, { 
+        ...item, 
+        ...(updatedData && typeof updatedData === 'object' ? updatedData : {}),
+        dispatch_status: newStatus 
+      });
+    }
+  } catch (error) {
+    console.error(`Failed to update dispatch status:`, error);
+    alert(`Error updating trip status to ${newStatus}. Please try again.`);
+  } finally {
+    setIsMutating(false);
+  }
+};
+
+  // Handler for telemetry form field changes
+  const handleTelemetryChange = (e) => {
+    const { name, value } = e.target;
+    setTelemetryForm(prev => ({ ...prev, [name]: value }));
+    setTelemetryFeedback(null); // Clear feedback on any edit
+  };
+
+  // Submit telemetry payload to backend
+  const handleTelemetrySubmit = async (e) => {
+    e.preventDefault();
+    setTelemetrySubmitting(true);
+    setTelemetryFeedback(null);
+
+    // Strip out any empty fields before submitting
+    const payload = Object.fromEntries(
+      Object.entries(telemetryForm).filter(([, v]) => v !== '')
+    );
+
+    if (Object.keys(payload).length === 0) {
+      setTelemetryFeedback({ type: 'error', message: 'Please fill in at least one field before submitting.' });
+      setTelemetrySubmitting(false);
+      return;
+    }
+
+    try {
+      await driverServices.updateVehicleTelemetry(payload);
+      setTelemetryFeedback({ type: 'success', message: 'Vehicle metrics updated successfully.' });
+      setTelemetryForm({ kilometers_driven: '', mileage: '', last_fuel_date: '', last_service_date: '' });
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Failed to submit. Please try again.';
+      setTelemetryFeedback({ type: 'error', message: detail });
     } finally {
-      setIsMutating(false);
+      setTelemetrySubmitting(false);
     }
   };
 
@@ -148,6 +202,111 @@ export default function DispatchCard({ item, onStatusUpdate }) {
               >
                 <CheckCircle size={14} /> {isMutating ? 'Completing...' : 'End Trip'}
               </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Telemetry Drawer Toggle ── */}
+        {!isCompleted && (
+          <div className="border-t border-gray-100 pt-2">
+            <button
+              onClick={() => { setIsDrawerOpen(prev => !prev); setTelemetryFeedback(null); }}
+              className="flex items-center gap-2 text-xs font-bold text-ntc-blue hover:text-blue-800 uppercase tracking-wider transition-colors cursor-pointer py-1"
+            >
+              <Gauge size={14} />
+              Log Vehicle Telemetry
+              {isDrawerOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
+
+            {/* Collapsible Drawer Body */}
+            {isDrawerOpen && (
+              <form
+                onSubmit={handleTelemetrySubmit}
+                className="mt-3 bg-ntc-gray/60 border border-dashed border-gray-200 rounded-xl p-4 space-y-4"
+              >
+                <p className="text-[10px] text-ntc-muted font-bold uppercase tracking-widest">Operational Asset Metrics Update</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Odometer */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ntc-muted uppercase tracking-wider flex items-center gap-1">
+                      <Gauge size={11} /> Odometer Reading (km)
+                    </label>
+                    <input
+                      type="number"
+                      name="kilometers_driven"
+                      value={telemetryForm.kilometers_driven}
+                      onChange={handleTelemetryChange}
+                      placeholder="e.g. 24500"
+                      min="0"
+                      className="w-full text-xs font-mono font-bold text-ntc-dark bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ntc-blue/30 focus:border-ntc-blue transition-all placeholder:text-gray-300"
+                    />
+                  </div>
+
+                  {/* Fuel Mileage */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ntc-muted uppercase tracking-wider flex items-center gap-1">
+                      <Fuel size={11} /> Fuel Mileage (km/l)
+                    </label>
+                    <input
+                      type="number"
+                      name="mileage"
+                      value={telemetryForm.mileage}
+                      onChange={handleTelemetryChange}
+                      placeholder="e.g. 14"
+                      min="0"
+                      className="w-full text-xs font-mono font-bold text-ntc-dark bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ntc-blue/30 focus:border-ntc-blue transition-all placeholder:text-gray-300"
+                    />
+                  </div>
+
+                  {/* Last Fuel Date */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ntc-muted uppercase tracking-wider flex items-center gap-1">
+                      <Fuel size={11} /> Last Fuel Date
+                    </label>
+                    <input
+                      type="date"
+                      name="last_fuel_date"
+                      value={telemetryForm.last_fuel_date}
+                      onChange={handleTelemetryChange}
+                      className="w-full text-xs font-mono font-bold text-ntc-dark bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ntc-blue/30 focus:border-ntc-blue transition-all"
+                    />
+                  </div>
+
+                  {/* Last Service Date */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-ntc-muted uppercase tracking-wider flex items-center gap-1">
+                      <Wrench size={11} /> Last Service Date
+                    </label>
+                    <input
+                      type="date"
+                      name="last_service_date"
+                      value={telemetryForm.last_service_date}
+                      onChange={handleTelemetryChange}
+                      className="w-full text-xs font-mono font-bold text-ntc-dark bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ntc-blue/30 focus:border-ntc-blue transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Feedback Line */}
+                {telemetryFeedback && (
+                  <p className={`text-xs font-bold ${telemetryFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {telemetryFeedback.type === 'success' ? '✓ ' : '✗ '}{telemetryFeedback.message}
+                  </p>
+                )}
+
+                {/* Submit Button */}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={telemetrySubmitting}
+                    className="flex items-center gap-2 bg-ntc-blue hover:bg-blue-800 disabled:bg-blue-300 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded shadow transition-all duration-150 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <Send size={13} />
+                    {telemetrySubmitting ? 'Submitting...' : 'Submit Metrics'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         )}
