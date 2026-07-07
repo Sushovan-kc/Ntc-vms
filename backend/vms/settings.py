@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-@(tzq8iig(w74cl*&gm4gk91i8m0!a+x^1&^g4m9kz#6m^tza(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.onrender.com']
 
 
 # Application definition
@@ -155,6 +155,7 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 
 
 CORS_ALLOWED_ORIGINS = [
+    "https://ntc-vms.onrender.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://172.16.50.88:5173",
