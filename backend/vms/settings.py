@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 import os
 from pathlib import Path
-
+from decouple import config
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,12 +24,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@(tzq8iig(w74cl*&gm4gk91i8m0!a+x^1&^g4m9kz#6m^tza('
+SECRET_KEY = config('SECRET_KEY')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+
 
 
 # Application definition
@@ -158,6 +162,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://ntc-vms-frontend.onrender.com",
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://172.16.50.88:5173",
 ]
 
