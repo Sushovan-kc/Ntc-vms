@@ -9,7 +9,14 @@ import apiclient from '../client';
       // Standardizes the error object threw back to the component
       throw error.response ? error.response.data : new Error('Network error');
     }
-  }
+  },
+  getBranches: async () => {
+    try {
+      const response = await apiclient.get('api/branch/');
+      return response.data; // Returns the list of branches
+    } catch (error) {
+      throw error.response ? error.response.data : new Error('Network error');
+    }}
 }; 
 
 export default registerservice;

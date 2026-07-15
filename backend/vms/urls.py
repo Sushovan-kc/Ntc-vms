@@ -17,11 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from profile.views import LoginView
+from branch.views import BranchViewSet
 
 urlpatterns = [
     path('ntc-vms-admin-page/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('api/login/', LoginView.as_view(), name='login'),
+    path('api/branch/',BranchViewSet.as_view({'get':'list'}), name='branch-list'),
     path('api/userprofile/', include('profile.urls')),
     path('api/vehicles/', include('fleet.urls')),
     path('api/driver/', include('driver.urls')),
