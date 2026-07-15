@@ -4,7 +4,7 @@ import { getApiBaseUrl } from './runtime';
 // 1. Initialize the custom configuration instance
 const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 10000,                        // Cancels request if backend takes > 10 seconds
+  timeout: 20000,                        
   headers: {
     'Content-Type': 'application/json',
   },

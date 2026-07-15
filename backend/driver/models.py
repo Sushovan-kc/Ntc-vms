@@ -1,9 +1,8 @@
 from django.core.cache import cache
-
-
 from django.db import models
 from django.core.exceptions import ValidationError
 from profile.models import Profile
+from .utils import trigger_dispatch_finalization
 
 # Create your models here.
 
@@ -15,11 +14,12 @@ class DriverProfile(models.Model):
         ON_TRIP = 'ON_TRIP', 'On Trip'
         
     user = models.OneToOneField('profile.Profile', on_delete=models.CASCADE, related_name='driver_profile')
-    license_number = models.CharField(max_length=20, unique=True)
-    license_image = models.ImageField(upload_to='driver_licenses/')
+    license_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    license_image = models.ImageField(upload_to='driver_licenses/',null=True, blank=True)
     address = models.TextField()
     driver_status = models.CharField(max_length=20, choices=DriverStatusChoices.choices, default=DriverStatusChoices.AVAILABLE)
     branch = models.ForeignKey('branch.Branch', on_delete=models.SET_NULL, null=True, blank=True)
+    is_profile_completed = models.BooleanField(default=False)
 
     
     def __str__(self):
@@ -28,8 +28,8 @@ class DriverProfile(models.Model):
     
     def save(self, *args, **kwargs):
 
-        if self.license_number is '':
-            self.license_number="Not uploaded"
+        if self.license_number == '':
+            self.license_number = "Not uploaded"
         if self.user.branch is not None:
             self.branch = self.user.branch
         else:
@@ -87,9 +87,8 @@ class Dispatches(models.Model):
                 record.dispatch_status = self.dispatch_status
                 record.save(update_fields=['dispatch_status'])
 
-                # Fire the async Celery task to calculate and persist distance
-                from .tasks import compute_and_save_distance
-                compute_and_save_distance.delay(record.pk)
+                # Finalize the archived route in the background without Celery.
+                trigger_dispatch_finalization(self.booking_id, record.pk)
             except DispatchRecord.DoesNotExist:
                 pass
 

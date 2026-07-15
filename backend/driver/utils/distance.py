@@ -1,10 +1,4 @@
 import math
-from concurrent.futures import ThreadPoolExecutor
-
-from django.conf import settings
-
-bg_executor = ThreadPoolExecutor(max_workers=4)
-
 
 def calculate_route_distance(route_coordinates):
     """
@@ -55,39 +49,3 @@ def calculate_route_distance(route_coordinates):
             continue
             
     return round(total_distance, 2)
-
-
-def cache_telemetry_in_redis(booking_id, lat, lon):
-    redis_key = f"route:{booking_id}"
-    settings.REDIS_CLIENT.rpush(redis_key, f"{lat},{lon}")
-    settings.REDIS_CLIENT.expire(redis_key, 86400)
-
-
-def execute_final_db_sync(booking_id, dispatch_record_id):
-    from .models import DispatchRecord
-
-    redis_key = f"route:{booking_id}"
-    raw_coords = settings.REDIS_CLIENT.lrange(redis_key, 0, -1)
-    if not raw_coords:
-        return
-
-    route_history = []
-    for item in raw_coords:
-        try:
-            lat_str, lon_str = item.split(',')
-            route_history.append([float(lat_str), float(lon_str)])
-        except (ValueError, AttributeError):
-            continue
-
-    try:
-        record = DispatchRecord.objects.get(pk=dispatch_record_id)
-        record.route_history = route_history
-        record.distance_traveled_km = calculate_route_distance(route_history)
-        record.save(update_fields=['route_history', 'distance_traveled_km'])
-        settings.REDIS_CLIENT.delete(redis_key)
-    except DispatchRecord.DoesNotExist:
-        pass
-
-
-def trigger_dispatch_finalization(booking_id, dispatch_record_id):
-    bg_executor.submit(execute_final_db_sync, booking_id, dispatch_record_id)

@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.views import APIView
 from asgiref.sync import async_to_sync
@@ -15,31 +14,28 @@ from core.filters import BranchFilterBackend, DispatchBranchFilterBackend
 from core.pagination import AdminProfileTablePagination
 from fleet.models import Vehicle, VehicleInfo
 from .serializers import AdminDriverProfileManagementSerializer, DriverVehicleInfoSerializer
-from .tasks import log_telemetry_data
 from django.core.cache import cache
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 
 # Create your views here.
 
-class DriverProfileSetupViewSet( mixins.RetrieveModelMixin,mixins.UpdateModelMixin, viewsets.GenericViewSet):
+class DriverProfileSetupViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = DriverProfileFirstTimeSetupSerializer
     queryset = DriverProfile.objects.all()
 
     def get_object(self):
-        """
-        Safely matches the request down to the driver profile instance 
-        by hopping from User -> Profile -> DriverProfile.
-        """
         user = self.request.user
         
-        # 1. Step into your custom profile app model
+        # 1. Check custom profile relation
         if not hasattr(user, 'profile'):
             raise NotFound({"detail": "Base profile registration record not found."})
         
-        # 2. Step from custom profile down to this driver profile
+        # 2. Check driver profile relation
         base_profile = user.profile
         if not hasattr(base_profile, 'driver_profile'):
-            raise NotFound({
+            raise PermissionDenied({
                 "detail": "Driver account entry missing or admin authorization is pending."
             })
             
@@ -239,8 +235,11 @@ class DriverTelemetryIngestView(APIView):
     def post(self, request):
         # Extract fields from the driver app's background GPS payload
         driver_id = request.data.get('driver_id') 
-        lat = float(request.data.get('latitude'))
-        lon = float(request.data.get('longitude'))
+        try:
+            lat = float(request.data.get('latitude'))
+            lon = float(request.data.get('longitude'))
+        except (TypeError, ValueError):
+            return Response({"detail": "Invalid coordinates provided."}, status=400)
 
         # 1. Zero-DB-Hit Check: Verify if this driver is actively en-route
         trip_info = cache.get(f"active_driver_trip:{driver_id}")
@@ -250,15 +249,21 @@ class DriverTelemetryIngestView(APIView):
         dispatch_id = trip_info['dispatch_id']
         booking_id = trip_info['booking_id']
 
-        # 2. Push directly to WebSockets room so dispatchers can watch this specific journey live
+        # 2. Push directly to WebSockets room so dispatchers can watch this journey live
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"dispatch_{dispatch_id}",
             {"type": "broadcast_location", "data": {"lat": lat, "lon": lon, "driver_id": driver_id}}
         )
 
-        # 3. Offload coordinate array logging securely to Celery
-        log_telemetry_data.delay(booking_id, lat, lon)
+        # 3. REPLACEMENT: Append coordinates straight to Redis list storage (No Celery required)
+        redis_key = f"route:{booking_id}"
+        try:
+            settings.REDIS_CLIENT.rpush(redis_key, f"{lat},{lon}")
+            settings.REDIS_CLIENT.expire(redis_key, 172800)  # Auto-expires in 48 hours if trip hangs abandoned
+        except Exception as exc:
+            # Fallback block to prevent app crash if Redis connection experiences transient drop
+            return Response({"status": "error", "message": f"Cache sync failure: {str(exc)}"}, status=500)
         
         return Response({"status": "processed"}, status=202)
     
@@ -272,26 +277,28 @@ class FetchRouteHistoryView(APIView):
             dispatch = Dispatches.objects.get(id=dispatch_id)
             booking_id = dispatch.booking_id
             
-            # 2. Query the DispatchRecord that holds the running trail array logs
-            record = DispatchRecord.objects.get(booking_id=booking_id, dispatch_status='IN_PROGRESS')
+            # 2. REPLACEMENT: Pull directly from Redis memory cache for real-time React mapping
+            redis_key = f"route:{booking_id}"
+            raw_coords = settings.REDIS_CLIENT.lrange(redis_key, 0, -1)
             
-            # 3. Return the JSON array directly to the React application mapping engine
-            # The format is a nested array: [[lat, lon], [lat, lon], [lat, lon]]
-            return Response({"coordinates": record.route_history}, status=200)
+            coordinates = []
+            for item in raw_coords:
+                try:
+                    lat_str, lon_str = item.split(',')
+                    coordinates.append([float(lat_str), float(lon_str)])
+                except (ValueError, AttributeError):
+                    continue
+                    
+            return Response({"coordinates": coordinates}, status=200)
             
         except Dispatches.DoesNotExist:
             # Fallback: If the active trip was already completed or deleted from Dispatches,
-            # we can attempt to check DispatchRecord for old archive records directly
+            # retrieve the static, compiled historical array out of the SQL archive
             try:
-                # Assuming dispatch_id maps or can be tracked via historical indices
                 record = DispatchRecord.objects.get(id=dispatch_id)
-                return Response({"coordinates": record.route_history}, status=200)
+                return Response({"coordinates": record.route_history or []}, status=200)
             except DispatchRecord.DoesNotExist:
                 return Response({"coordinates": []}, status=200)
-                
-        except DispatchRecord.DoesNotExist:
-            # If the record row exists but no GPS data has hit it yet, return a clean empty list
-            return Response({"coordinates": []}, status=200)
 
 
 class DriverAssetTelemetryUpdateView(APIView):
@@ -397,4 +404,4 @@ class HistoricalDispatchRouteView(APIView):
                 "distance_km": record.distance_traveled_km,
             },
             status=status.HTTP_200_OK
-        )
+        )

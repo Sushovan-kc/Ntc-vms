@@ -16,7 +16,7 @@ urlpatterns = [
         'patch': 'partial_update'
     }), name='driver-profile-update'),
     path('admin/<int:pk>/', AdminDriverProfileManagementViewSet.as_view({
-        'get':'retrive',
+        'get':'retrieve',
         'put': 'update',
         'patch': 'partial_update',
         'delete': 'destroy'
@@ -43,4 +43,4 @@ urlpatterns = [
 
     # Feature 2: Manager views completed route history by DispatchRecord primary key
     path('tracking/history/record/<int:record_id>/', HistoricalDispatchRouteView.as_view(), name='historical-dispatch-route'),
-]
+]

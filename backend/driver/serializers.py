@@ -3,36 +3,35 @@ from .models import DispatchRecord, Dispatches, DriverProfile
 from fleet.models import Vehicle
 
 class DriverProfileFirstTimeSetupSerializer(serializers.ModelSerializer):
+    # Explicitly pull these read-only fields into representation without allowing updates
+    is_locked = serializers.BooleanField(source='is_profile_completed', read_only=True)
+    driver_status = serializers.CharField(read_only=True)
+    branch_id = serializers.IntegerField(source='branch.id', read_only=True, allow_null=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True, allow_null=True)
+
     class Meta:
         model = DriverProfile
-        # Only expose fields the driver needs to fill out the first time
-        fields = ['id', 'license_number', 'license_image', 'address']
-        read_only_fields = ['id']  # Prevents the driver from altering the primary key
+        # Keep this strictly to what they are allowed to input
+        fields = [
+            'id', 'license_number', 'license_image', 'address', 
+            'is_locked', 'driver_status', 'branch_id', 'branch_name'
+        ]
+        read_only_fields = ['id']
 
     def validate(self, attrs):
-        # 'self.instance' refers to the DriverProfile fetched by get_object()
-        if self.instance and self.instance.license_number:
+        # ALWAYS check the instance state first, regardless of what data the user sent
+        if self.instance and self.instance.is_profile_completed:
             raise serializers.ValidationError(
                 {"detail": "Your profile information has already been submitted and locked."}
             )
         return attrs
-    
-    def to_representation(self, instance):
-        """
-        Dynamically handles the GET output response.
-        If data is empty, it returns null values. If filled, it shows them.
-        """
-        representation = super().to_representation(instance)
-        
-        # Include extra status tracking fields so the frontend knows it's locked
-        representation['is_locked'] = bool(instance.license_number)
-        representation['driver_status'] = instance.driver_status
-        
-        # Include branch details if assigned
-        representation['branch_id'] = instance.branch_id if instance.branch else None
-        representation['branch_name'] = instance.branch.name if instance.branch else None
-        return representation
-    
+
+    def update(self, instance, validated_data):
+        """ override update to flip the completion switch automatically """
+        instance = super().update(instance, validated_data)
+        instance.is_profile_completed = True
+        instance.save()
+        return instance
 
 class AdminDriverProfileManagementSerializer(serializers.ModelSerializer):
     # CRITICAL CHANGE: Explicitly set read_only=True on user account data
@@ -83,8 +82,8 @@ class AdminDriverProfileManagementSerializer(serializers.ModelSerializer):
 class DriverVehicleInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model=Vehicle
-        fields=['manufacturer','model','year','license_plate','approval_status','current_driver']
-        read_only_fields=['manufacturer','model','year','license_plate','approval_status','current_driver']
+        fields=['id','manufacturer','model','year','license_plate','approval_status','current_driver']
+        read_only_fields=['id','manufacturer','model','year','license_plate','approval_status','current_driver']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

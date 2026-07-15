@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 import os
 from pathlib import Path
+import redis
 from decouple import config
 import dj_database_url
 
@@ -154,8 +155,12 @@ CACHES = {
     }
 }
 
-# Celery Configuration
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+REDIS_CLIENT = redis.Redis(
+    host="127.0.0.1",
+    port=6379,
+    db=0,
+    decode_responses=True,
+)
 
 
 CORS_ALLOWED_ORIGINS = [

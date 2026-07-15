@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from core.filters import BranchFilterBackend
-from core.permissions import IsBranchAdmin
-from .serializers import VehicleSerializer, AssignDriverSerializer
-from .models import Vehicle
+from core.permissions import IsBranchAdmin, IsDriverOfVehicleInfo,IsDriverOrBranchAdmin
+from .serializers import VehicleInfoSerializer, VehicleSerializer, AssignDriverSerializer
+from .models import Vehicle, VehicleInfo
 from django.db import transaction
 
 # Create your views here.
@@ -92,5 +92,21 @@ class VehicleAssignView(RetrieveUpdateAPIView):
         else:
             # If the admin chose 'None' (unassigning a driver), save normally
             serializer.save()
+
+
+
+class VehicleInfoView(ReadOnlyModelViewSet):
+    queryset= VehicleInfo.objects.all()
+    serializer_class = VehicleInfoSerializer
+    permission_classes = [IsAuthenticated,IsBranchAdmin]
+    filter_backends = [BranchFilterBackend]
+    filterset_fields = ['vehicle__branch'] 
+
+class VehicleInfoUpdateView(ModelViewSet):
+    lookup_field = 'vehicle_id'
+    queryset = VehicleInfo.objects.select_related('vehicle').all()
+    serializer_class = VehicleInfoSerializer
+    permission_classes = [IsAuthenticated, IsDriverOfVehicleInfo | IsBranchAdmin]
+
 
     

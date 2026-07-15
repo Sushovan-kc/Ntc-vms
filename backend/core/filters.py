@@ -4,34 +4,42 @@ class BranchFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         user = request.user
         
-        # 2. Safety Gate: Block unauthenticated users immediately
+        # 1. Block unauthenticated users immediately
         if not user or not user.is_authenticated:
             return queryset.none()
-        
-        # 3. FIXED: Allow Superadmins to see everything across the entire system
+            
+        # 2. Superadmins see everything across the system
         if user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'super admin'):
             return queryset
 
-        # 4. FIXED: Removed the premature return and placed Branch Admins check first
+        # 3. Handle Branch Admin Filtering
         if hasattr(user, 'profile') and user.profile.role == 'admin':
             user_branch = user.profile.branch
             if user_branch is not None:
-                # Allows views to override the field name if it's not called 'branch'
-                filter_field = getattr(view, 'branch_filter_field', 'branch')
+                # Fallback field name to check
+                default_field = 'branch'
+                
+                # SMART REPAIR: If filtering VehicleInfo, look through the vehicle relation
+                if queryset.model.__name__ == 'VehicleInfo':
+                    default_field = 'vehicle__branch'
+                    
+                filter_field = getattr(view, 'branch_filter_field', default_field)
                 return queryset.filter(**{filter_field: user_branch})
             return queryset.none()
-        
-        # 5. Fallback: Drivers/Employees can only see their own records (if the model links to user)
+
+        # 4. Handle Driver / Row-Level Filtering
+        # If the view is for VehicleInfo and the user is a driver, filter by their assigned vehicle
+        if queryset.model.__name__ == 'VehicleInfo' and hasattr(user, 'profile'):
+            driver_profile = getattr(user.profile, 'driver_profile', None)  # Adjust to your exact profile -> driver relation
+            if driver_profile:
+                return queryset.filter(vehicle__current_driver_id=driver_profile.id)
+
+        # Generic fallback if the model has a direct link to the user
         if hasattr(queryset.model, 'user'):
             return queryset.filter(user=user)
-        
-        # Safe default fallback block
+
+        # Safe default fallback block for unauthorized access profiles
         return queryset.none()
-
-
-
-
-from rest_framework.filters import BaseFilterBackend
 
 class DispatchBranchFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):

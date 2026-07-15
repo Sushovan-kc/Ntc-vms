@@ -1,6 +1,6 @@
 import re
 from rest_framework import serializers
-from .models import Vehicle
+from .models import Vehicle, VehicleInfo
 from driver.models import DriverProfile
 
 
@@ -96,3 +96,50 @@ class AssignDriverSerializer(serializers.ModelSerializer):
             
         return representation
     
+
+class VehicleInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleInfo
+        fields = [
+            'id', 'vehicle', 'engine_type', 'mileage', 
+            'kilometers_driven', 'last_fuel_date', 'last_service_date'
+        ]
+        read_only_fields = ['id', 'vehicle', 'engine_type']
+
+    def validate(self, attrs):
+        instance = self.instance
+
+        # Validation only runs during updates when an existing database instance exists
+        if instance:
+            # 1. KILOMETERS DRIVEN VALIDATION
+            incoming_km = attrs.get('kilometers_driven')
+            existing_km = getattr(instance, 'kilometers_driven', None)
+            
+            if incoming_km is not None and existing_km is not None:
+                if incoming_km < existing_km:
+                    raise serializers.ValidationError({
+                        "kilometers_driven": f"Kilometers driven cannot be less than the current record of {existing_km} km."
+                    })
+
+            # 2. FUEL DATE VALIDATION
+            incoming_fuel_date = attrs.get('last_fuel_date')
+            existing_fuel_date = getattr(instance, 'last_fuel_date', None)
+            
+            if incoming_fuel_date is not None and existing_fuel_date is not None:
+                if incoming_fuel_date < existing_fuel_date:
+                    raise serializers.ValidationError({
+                        "last_fuel_date": "Last fuel date cannot be earlier than the previous recorded fuel date."
+                    })
+
+            # 3. SERVICE DATE VALIDATION
+            incoming_service_date = attrs.get('last_service_date')
+            existing_service_date = getattr(instance, 'last_service_date', None)
+            
+            if incoming_service_date is not None and existing_service_date is not None:
+                if incoming_service_date < existing_service_date:
+                    raise serializers.ValidationError({
+                        "last_service_date": "Last service date cannot be earlier than the previous recorded service date."
+                    })
+
+        return attrs
+        

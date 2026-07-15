@@ -13,12 +13,46 @@ const driverServices = {
         }
     },
 
+    DriverProfileSetup: async (profileData) => {
+        try {
+            // 🔑 THE FIX: Pass the headers config object as the 3rd argument
+            const response = await apiClient.patch('/api/driver/update/', profileData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error setting up driver profile:", error);
+            throw error;
+        }
+    },
+    
     getDriverVehicleInfo: async () => {
         try{
             const response=await apiClient.get('/api/driver/vehicleinfo/')
             return response.data;
         } catch (error) {
             console.error("Error fetching driver vehicle info:", error);
+            throw error;
+        }
+    },
+
+    getVehicletelemetrydata: async (vehicleId) => {
+        try{
+            const response=await apiClient.get(`/api/vehicles/infoupdate/${vehicleId}/`);
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching vehicle telemetry:", error);
+            throw error;
+        }
+    },
+    updateVehicletelemetrydata: async (vehicleId, telemetryData) => {
+        try{
+            const response=await apiClient.patch(`/api/vehicles/infoupdate/${vehicleId}/`, telemetryData);
+            return response.data;
+        } catch (error) {
+            console.error("Error updating vehicle telemetry:", error);
             throw error;
         }
     },
@@ -67,4 +101,4 @@ const driverServices = {
   },
 }
 
-export default driverServices;
+export default driverServices;

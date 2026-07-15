@@ -1,43 +1,33 @@
-# tasks.py (Inside your current app folder)
-from celery import shared_task
+# tasks.py (Cleaned up, no Celery)
+from django.conf import settings
 from .models import DispatchRecord
 from .utils import calculate_route_distance
 
+def cache_telemetry_in_redis(booking_id, lat, lon):
+    """Replaces your old log_telemetry_data task"""
+    redis_key = f"route:{booking_id}"
+    # Pushes string to Redis List instantly
+    settings.REDIS_CLIENT.rpush(redis_key, f"{lat},{lon}")
+    settings.REDIS_CLIENT.expire(redis_key, 86400) # 24hr auto-cleanup
 
-@shared_task
-def log_telemetry_data(booking_id, lat, lon):
-    """
-    Appends a new GPS coordinate to the running route_history trail 
-    for the active DispatchRecord linked to the given booking.
-    """
-    try:
-        # We trace paths by linking directly to the immutable Booking or Vehicle ID
-        # since your Dispatches objects delete themselves on complete
-        record = DispatchRecord.objects.get(booking_id=booking_id, dispatch_status='IN_PROGRESS')
+def sync_redis_to_db(booking_id, dispatch_record_id):
+    """Replaces your old compute_and_save_distance task"""
+    redis_key = f"route:{booking_id}"
+    raw_coords = settings.REDIS_CLIENT.lrange(redis_key, 0, -1)
+    
+    route_history = []
+    for item in raw_coords:
+        try:
+            lat_str, lon_str = item.split(',')
+            route_history.append([float(lat_str), float(lon_str)])
+        except ValueError:
+            continue
 
-        current_route = record.route_history or []
-        current_route.append([lat, lon])
-
-        record.route_history = current_route
-        record.save(update_fields=['route_history'])
-    except DispatchRecord.DoesNotExist:
-        pass
-
-
-@shared_task
-def compute_and_save_distance(dispatch_record_id):
-    """
-    Triggered automatically when a dispatch concludes (COMPLETED or CANCELLED).
-    Fetches the recorded coordinate trail, runs the pure-Python Haversine calculation,
-    and writes the final float value into the distance_traveled_km column.
-    """
     try:
         record = DispatchRecord.objects.get(pk=dispatch_record_id)
-        route = record.route_history or []
-
-        km = calculate_route_distance(route)
-        record.distance_traveled_km = km
-        record.save(update_fields=['distance_traveled_km'])
+        record.route_history = route_history
+        record.distance_traveled_km = calculate_route_distance(route_history)
+        record.save(update_fields=['route_history', 'distance_traveled_km'])
+        settings.REDIS_CLIENT.delete(redis_key) # Free Redis memory
     except DispatchRecord.DoesNotExist:
-        # Record may have been deleted externally — silently skip
         pass
