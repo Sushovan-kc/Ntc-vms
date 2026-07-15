@@ -22,6 +22,7 @@ import AdminDriverPage from '../pages/admin/AdminDriverPage'
 import Register from '../pages/Register'
 import AdminTrackingPage from '../pages/admin/AdminTrackingPage'
 import AdminHistoricalTrackingPage from '../pages/admin/AdminHistoricalTrackingPage'
+import ForgotPassword from '../pages/ForgotPassword'
 
 function getLocalAuth() {
   try {
@@ -104,6 +105,7 @@ const Approuter = () => {
     <Routes>
       <Route path="/" element={<RootEntry />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgotpassword" element={<ForgotPassword />} />
 
       {/* 🟢 Routes configured with strict lowercase role expectations */}
       <Route path="/dashboard/employee"

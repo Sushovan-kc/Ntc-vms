@@ -32,20 +32,20 @@ const Login = () => {
     
     setIsLoading(false); 
 
-    if (result.success) {
-      // 🟢 OPTIMIZED: Fetch the user data payload directly from localStorage to route them safely
-      const savedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-      const normalizedRole = (savedUserData.role || '').toUpperCase();
+    // if (result.success) {
+    //   // 🟢 OPTIMIZED: Fetch the user data payload directly from localStorage to route them safely
+    //   const savedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+    //   const normalizedRole = (savedUserData.role || '').toUpperCase();
 
-      if (normalizedRole === 'DRIVER') { 
-        navigate('/dashboard/driver-dashboard'); 
-      } else { 
-        navigate('/dashboard'); 
-      } 
-    } else {
-      // 🟢 CHANGED: Displays clean error messages funneled through your context layer
-      setError(result.error || 'Please enter valid credentials.');
-    }
+    //   if (normalizedRole === 'DRIVER') { 
+    //     navigate('/dashboard/driverdashboard'); 
+    //   } else { 
+    //     navigate('/dashboard'); 
+    //   } 
+    // } else {
+    //   // 🟢 CHANGED: Displays clean error messages funneled through your context layer
+    //   setError(result.error || 'Please enter valid credentials.');
+    // }
   }; 
 
   return ( 
@@ -98,7 +98,7 @@ const Login = () => {
               </label> 
             </div> 
             <Link 
-              to="/forgot-password" 
+              to="/forgotpassword" 
               className="text-ntc-blue hover:text-ntc-blue-hover text-[0.9rem] font-medium no-underline hover:underline"
             > 
               Forgot Password? 
