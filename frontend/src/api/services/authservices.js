@@ -1,27 +1,36 @@
 import apiClient from "../client";
 
 const authservice = {
-  // 🟢 Destructures credentials parameter to accept standard login payloads
+  // 🟢 FIXED: Wrapped in try/catch to catch Axios 400/401 rejections safely
   login: async ({ username, password }) => {
-    const response = await apiClient.post('/api/login/', { username, password });
-    const access  = response.data.access;
-    const refresh = response.data.refresh;
+    try {
+      const response = await apiClient.post('/api/login/', { username, password });
+      
+      const access = response.data.access;
+      const refresh = response.data.refresh;
+      
+      if (access) {
+        localStorage.setItem('accessToken', access);
+        if (refresh) localStorage.setItem('refreshToken', refresh);
+      }
+      
+      const userPayload = {
+        user_id: response.data.user_id,
+        username: response.data.username,
+        role: response.data.Role,
+        is_approved: response.data.is_approved,
+        userbranch: response.data.branch_name,
+      };
+      
+      localStorage.setItem('userData', JSON.stringify(userPayload));
+      return response.data;
 
-    if (access) {
-      localStorage.setItem('accessToken', access);
-      if (refresh) localStorage.setItem('refreshToken', refresh);
+    } catch (error) {
+      console.error("📦 API Service Level Login Error Captured:", error);
+      
+      // 🟢 CRITICAL: Re-throw the error object so AuthContext's catch block can catch it
+      throw error; 
     }
-    
-    const userPayload = {
-      user_id: response.data.user_id,
-      username: response.data.username,
-      role: response.data.Role,             
-      is_approved: response.data.is_approved,
-      userbranch: response.data.branch_name,
-    };
-    
-    localStorage.setItem('userData', JSON.stringify(userPayload));
-    return response.data;
   },
 
   logout: () => {
@@ -32,7 +41,7 @@ const authservice = {
 
   isAuthenticated: () => {
     const token = localStorage.getItem('accessToken');
-    return !!token; 
+    return !!token;
   }
 };
 

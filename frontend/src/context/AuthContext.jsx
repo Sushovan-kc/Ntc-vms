@@ -25,31 +25,45 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // 🟢 2. LOGIN TASK: Matches their UI parameters but uses your API engine
-  const login = async (username, password) => {
-    try {
-      // Calls your JS service layer directly
-      const responseData = await authservice.login({ username, password });
-      
-      // Construct the payload structure your JS version maps out
-      const userPayload = {
-        user_id: responseData.user_id,
-        role: responseData.Role,             
-        is_approved: responseData.is_approved,
-        userbranch: responseData.branch_name,
-        username: username // fallback value for display templates
-      };
+const login = async (username, password) => {
+  try {
+    const responseData = await authservice.login({ username, password });
+    
+    const userPayload = { 
+      user_id: responseData.user_id, 
+      role: responseData.Role, 
+      is_approved: responseData.is_approved, 
+      userbranch: responseData.branch_name, 
+      username: username 
+    };
 
-      // Set reactive state so their UI components re-render instantly
-      setUser(userPayload);
-      return { success: true };
-    } catch (error) {
-      console.error("❌ Context Layer Login Error:", error);
-      // Fallback extraction to prevent crashing if the error structure is dynamic
-      const errorMessage = error.error || error.message || 'Login failed';
-      return { success: false, error: errorMessage };
+    setUser(userPayload); 
+    return { success: true };
+    
+  } catch (error) {
+    console.error("❌ Context Layer Login Error:", error);
+    
+    let processedError = 'Login failed. Please try again.';
+
+    // Safely check if Axios caught a response payload from Django (like a 400 or 401 error)
+    if (error.response && error.response.data) {
+      const data = error.response.data;
+      
+      // 🟢 FIXED: Target the exact 'error' key sent by your backend
+      processedError = data.error || data.non_field_errors || data.detail || 'Invalid credentials';
+    } else if (error.message) {
+      processedError = error.message;
     }
-  };
+
+    // Always pass back a clean string wrapper object
+    return { 
+      success: false, 
+      error: typeof processedError === 'string' ? processedError : 'Invalid credentials' 
+    };
+  }
+};
+
+
 
   // 🟢 3. LOGOUT TASK: Triggers your storage sweeps and updates global UI state
   const logout = () => {

@@ -28,11 +28,13 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const isLoginEndpoint = error.config?.url?.includes('/api/login/');
     // If Django rejects with a 401 Unauthorized status, clear out memory and send user to login
     if (error.response && error.response.status === 401) {
+      if (!isLoginEndpoint) {
       localStorage.removeItem('accessToken');
       window.location.href = '/'; // Routes back to your skeleton login layout
-    }
+    }}
     return Promise.reject(error);
   }
 );
