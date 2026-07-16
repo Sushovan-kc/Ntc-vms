@@ -4,6 +4,7 @@ import { KeyRound, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-rea
 import AuthLayout from '../components/AuthLayout';
 import FormInput from '../components/FormInput';
 import Loader from '../components/Loader';
+import registerservice from '../api/services/registerservice';
 
 const ForgotPassword = () => {
   const [identifier, setIdentifier] = useState('');
@@ -11,7 +12,7 @@ const ForgotPassword = () => {
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
     if (!identifier.trim()) {
       setError('Please enter your Employee ID or Email Address.');
@@ -21,11 +22,14 @@ const ForgotPassword = () => {
     setIsLoading(true);
     setError('');
 
-    // Simulate API routing interaction matching client configurations
-    setTimeout(() => {
+    try{
+      const response = await registerservice.sendResetPasswordEmail(identifier.trim());
       setIsLoading(false);
       setIsSent(true);
-    }, 1500);
+    } catch (err) {
+      setIsLoading(false);
+      setError('Failed to send reset link. Please try again.');
+    }
   };
 
   return (
@@ -77,14 +81,14 @@ const ForgotPassword = () => {
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="relative">
               <FormInput 
-                label="Employee ID or Email" 
+                label="Username" 
                 name="identifier" 
                 value={identifier} 
                 onChange={(e) => { 
                   setIdentifier(e.target.value); 
                   setError(''); 
                 }} 
-                placeholder="e.g. emp_1234 or email@ntc.net.np" 
+                placeholder="Eg.Employee1" 
                 required 
                 className="w-full text-sm text-gray-900 placeholder:text-gray-400"
               />

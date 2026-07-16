@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import  User
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from .serializers import UserProfileDetailSerializer, UserRegistrationSerializer, UserTableSerializer, userProfileSerializer
+from .serializers import ForgotPasswordSerializer, UserProfileDetailSerializer, UserRegistrationSerializer, UserTableSerializer, userProfileSerializer, ResetPasswordConfirmSerializer
 from rest_framework.permissions import AllowAny, IsAdminUser,IsAuthenticated
 from rest_framework.views import APIView, Response, status
 from .models import Profile
@@ -12,8 +12,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import NotFound
 from .adminserializer import AdminUserProfileManagementSerializer 
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import CreateAPIView,GenericAPIView
 from core.pagination import AdminProfileTablePagination
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 # Create your views here.
 
 class RegisterUserView(CreateAPIView):
@@ -128,3 +135,80 @@ class  UserTableViewset(ReadOnlyModelViewSet):
     def get_queryset(self):
 
         return User.objects.filter(profile__isnull=True)
+    
+
+
+
+class ForgotPasswordView(GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        username = serializer.validated_data['username']
+        
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # Security Best Practice: Don't reveal if a user exists or not
+            return Response({"success": "If the account exists, a reset link has been sent."}, status=status.HTTP_200_OK)
+
+        if not user.email:
+            return Response({"error": "This user does not have an email linked to their account."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate unique temporary tokens
+        token = default_token_generator.make_token(user)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Build dynamic link pointing to your React app routing
+        reset_link = f"{settings.FRONTEND_URL}/reset-password/{uidb64}/{token}/"
+        
+        # Context data context to pass to the HTML template
+        context = {
+            'username': user.username,
+            'reset_link': reset_link
+        }
+        
+        # Render the HTML template with context data
+        html_message = render_to_string('emails/password_reset_email.html', context)
+        # Create a plain-text version fallback automatically
+        plain_message = strip_tags(html_message) 
+        
+        subject = "Password Reset Request"
+        
+        send_mail(
+            subject=subject,
+            message=plain_message,  # Plain text fallback
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,  # The HTML email content
+            fail_silently=False
+        )
+        
+        return Response({"success": "Password reset link sent to your registered email."}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordConfirmView(GenericAPIView):
+    serializer_class = ResetPasswordConfirmSerializer
+    authentication_classes = [] 
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Invalid dynamic link structure."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "This link is invalid or has expired."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(serializer.validated_data['password'])
+        user.save()
+        return Response({"success": "Your password has been successfully updated."}, status=status.HTTP_200_OK)

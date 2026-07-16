@@ -49,7 +49,7 @@ class VehicleInfo(models.Model):
         ELECTRIC = 'ELECTRIC', 'Electric'
         HYBRID = 'HYBRID', 'Hybrid'
 
-    vehicle = models.OneToOneField(Vehicle, on_delete=models.CASCADE, related_name='info')
+    vehicle = models.OneToOneField(Vehicle, on_delete=models.CASCADE, related_name='vehicle_info')
     engine_type = models.CharField(max_length=20, choices=EngineType.choices, blank=True, null=True)
     mileage = models.PositiveIntegerField(blank=True, null=True)
     kilometers_driven = models.PositiveIntegerField(blank=True, null=True)

@@ -19,6 +19,7 @@ import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
 
 # Quick-start development settings - unsuitable for production
@@ -76,7 +77,7 @@ ROOT_URLCONF = 'vms.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -190,6 +191,18 @@ REST_FRAMEWORK = {
     )
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# Use python-decouple's config to safely read from your .env file
+EMAIL_HOST_USER = config("EMAIL_HOST_USER") 
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD") 
+
+# This dynamically inserts your email address into the sender label correctly
+DEFAULT_FROM_EMAIL = f"App Support <{EMAIL_HOST_USER}>"
+
+FRONTEND_URL = config("FRONTEND_URL", default="https://ntc-vms-frontend.onrender.com")  # Default to localhost for development
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 

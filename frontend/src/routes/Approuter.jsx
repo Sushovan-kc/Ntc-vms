@@ -23,6 +23,7 @@ import Register from '../pages/Register'
 import AdminTrackingPage from '../pages/admin/AdminTrackingPage'
 import AdminHistoricalTrackingPage from '../pages/admin/AdminHistoricalTrackingPage'
 import ForgotPassword from '../pages/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword'
 
 function getLocalAuth() {
   try {
@@ -106,6 +107,7 @@ const Approuter = () => {
       <Route path="/" element={<RootEntry />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgotpassword" element={<ForgotPassword />} />
+      <Route path="/reset-password/:uidb64/:token" element={<ResetPassword />} />
 
       {/* 🟢 Routes configured with strict lowercase role expectations */}
       <Route path="/dashboard/employee"

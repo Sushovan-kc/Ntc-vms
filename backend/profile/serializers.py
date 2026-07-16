@@ -106,3 +106,21 @@ class UserTableSerializer(serializers.ModelSerializer):
         # 🟢 Remove 'user' from this array list. 
         # The 'id' field represents the Django User ID your frontend dropdown needs!
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+
+    def validate_username(self, value):
+        if not User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This username does not exist.")
+        return value
+
+class ResetPasswordConfirmSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"password": "Passwords do not match."})
+        return data
