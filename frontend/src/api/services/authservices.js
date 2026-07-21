@@ -26,7 +26,7 @@ const authservice = {
       return response.data;
 
     } catch (error) {
-      console.error("📦 API Service Level Login Error Captured:", error);
+      console.error("API Service Level Login Error Captured:", error);
       
       // 🟢 CRITICAL: Re-throw the error object so AuthContext's catch block can catch it
       throw error; 
