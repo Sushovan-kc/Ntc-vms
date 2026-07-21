@@ -8,4 +8,10 @@ class BranchSerializer(serializers.ModelSerializer):
         model = Branch
         fields = ['id', 'name']
 
+
+class AddBranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = ['name','location']
+
         

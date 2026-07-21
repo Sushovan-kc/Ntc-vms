@@ -95,10 +95,13 @@ ASGI_APPLICATION = 'vms.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DOCKER_DATABASE_URL = 'postgresql://postgres:sushovan%40123@db:5432/vehicle_system_db'
+
 DATABASES = {
     'default': dj_database_url.config(
-        # Pulls the transaction-pooler link on Render, falls back to your local Postgres database
-        default=os.environ.get('DATABASE_URL', 'postgresql://postgres:sushovan%40123@127.0.0.1:5432/vehicle_system_db'),
+        # Render will pass DATABASE_URL automatically. 
+        # If it doesn't exist, it falls back to the local Docker Postgres URL.
+        default=os.environ.get('DATABASE_URL', DOCKER_DATABASE_URL),
         conn_max_age=600,
     )
 }
