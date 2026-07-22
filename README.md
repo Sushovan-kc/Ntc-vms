@@ -17,10 +17,11 @@ The system is designed to support operational workflows such as vehicle assignme
 
 ```mermaid
 flowchart LR
-  U[User Browser] --> F[Frontend - React/Vite\n:3000]
-  F --> B[Backend - Django API/ASGI\n:8000]
-  B --> D[(PostgreSQL\n:5412 -> 5432)]
-  B --> R[(Redis\n:6379)]
+    U[User Browser] --> F[Frontend - React/Vite<br/>:3000]
+    F --> B[Backend - Django API/ASGI<br/>:8000]
+    B --> D[(PostgreSQL<br/>:5412 -> 5432)]
+    B --> R[(Redis<br/>:6379)]
+
 ```
 
 ## Repository Structure
