@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # 1. PostgreSQL Database
   db:
@@ -30,6 +32,8 @@ services:
   backend:
     build: ./backend
     container_name: app_backend
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
     ports:
@@ -54,10 +58,26 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_BACKEND_PROXY_TARGET=http://backend:8000
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
 
-# 🧠 CRUCIAL: These must be aligned completely to the left margin!
+  # 5. Centrifugo Real-time Engine
+  centrifugo:
+    image: centrifugo/centrifugo:v5
+    container_name: app_centrifugo
+    volumes:
+      # FIXED: Map the file directly to Centrifugo's exact internal config directory path
+      - ./centrifugo_config.json:/centrifugo/config.json
+    ports:
+      - "8010:8000"
+    env_file:
+      - ./backend/.env
+    # FIXED: Replaced custom flags with Centrifugo's exact absolute config flag pointer
+    command: centrifugo --config=/centrifugo/config.json
+    depends_on:
+      - redis
+
 volumes:
   postgres_data:
   redis_data:

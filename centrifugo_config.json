@@ -1,0 +1,25 @@
+{
+  "api_key": "$$CENTRIFUGO_API_KEY",
+  "token_hmac_secret_key": "$$SECRET_KEY",
+  "allowed_token_signature_algorithms": ["HS256"],
+  "token_user_id_claim": "user_id",
+  "presence": true,
+  "join_leave": true,
+  "engine": "redis",
+  "redis_address": "redis:6379",
+  "allowed_origins": ["http://localhost:5173", "http://localhost:3000"],
+  "admin": true,
+  "admin_password": "admin_dashboard_password_here",
+  "admin_secret": "choose_a_long_random_admin_secret_string_here",
+  "namespaces": [
+    {
+      "name": "personal",
+      "user_id_in_channel": true
+    },
+    {
+      "name": "tracking",
+      "publish": false,
+      "presence": true
+    }
+  ]
+}

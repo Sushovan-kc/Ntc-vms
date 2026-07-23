@@ -30,6 +30,7 @@ class DriverProfileFirstTimeSetupSerializer(serializers.ModelSerializer):
         """ override update to flip the completion switch automatically """
         instance = super().update(instance, validated_data)
         instance.is_profile_completed = True
+        instance.driver_status = DriverProfile.DriverStatusChoices.AVAILABLE
         instance.save()
         return instance
 

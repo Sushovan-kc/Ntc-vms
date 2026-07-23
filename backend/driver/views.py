@@ -1,10 +1,9 @@
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.views import APIView
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from .utils import cache_telemetry_in_redis
 from .models import DispatchRecord, Dispatches, DriverProfile
 from .serializers import DispatchSerializers, DriverDispatchHistorySerializer, DriverDispatchStatusUpdateSerializer, DriverListSerializer, DriverProfileFirstTimeSetupSerializer
 from rest_framework import mixins, viewsets
@@ -17,6 +16,13 @@ from .serializers import AdminDriverProfileManagementSerializer, DriverVehicleIn
 from django.core.cache import cache
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from cent import Client
+
+centrifugo_client = Client(
+    settings.CENTRIFUGO_API_URL, 
+    api_key=settings.CENTRIFUGO_API_KEY
+)
+
 
 # Create your views here.
 
@@ -230,11 +236,10 @@ class DriverDispatchHistoryViewSet(ReadOnlyModelViewSet):
 
 
 
-
 class DriverTelemetryIngestView(APIView):
     def post(self, request):
         # Extract fields from the driver app's background GPS payload
-        driver_id = request.data.get('driver_id') 
+        driver_id = request.data.get('driver_id')
         try:
             lat = float(request.data.get('latitude'))
             lon = float(request.data.get('longitude'))
@@ -249,22 +254,27 @@ class DriverTelemetryIngestView(APIView):
         dispatch_id = trip_info['dispatch_id']
         booking_id = trip_info['booking_id']
 
-        # 2. Push directly to WebSockets room so dispatchers can watch this journey live
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"dispatch_{dispatch_id}",
-            {"type": "broadcast_location", "data": {"lat": lat, "lon": lon, "driver_id": driver_id}}
-        )
-
-        # 3. REPLACEMENT: Append coordinates straight to Redis list storage (No Celery required)
-        redis_key = f"route:{booking_id}"
-        try:
-            settings.REDIS_CLIENT.rpush(redis_key, f"{lat},{lon}")
-            settings.REDIS_CLIENT.expire(redis_key, 172800)  # Auto-expires in 48 hours if trip hangs abandoned
-        except Exception as exc:
-            # Fallback block to prevent app crash if Redis connection experiences transient drop
-            return Response({"status": "error", "message": f"Cache sync failure: {str(exc)}"}, status=500)
+        # 2. Centrifugo Real-time Stream: Broadcasts coordinates instantly to React browsers
+        centrifugo_channel = f"tracking:dispatch_{dispatch_id}"
+        payload = {
+            "lat": lat,
+            "lon": lon,
+            "driver_id": driver_id
+        }
         
+        try:
+            centrifugo_client.publish(centrifugo_channel, payload)
+        except Exception as cent_exc:
+            # Log warning but do not crash the endpoint if Centrifugo container experiences transient drops
+            print(f"Centrifugo broadcast failure: {str(cent_exc)}")
+
+        # 3. Persistent Data Logging: Calls your modular helper task function
+        try:
+            cache_telemetry_in_redis(booking_id, lat, lon)
+        except Exception as exc:
+            # Fallback block to catch Redis server/client operational issues
+            return Response({"status": "error", "message": f"Cache sync failure: {str(exc)}"}, status=500)
+
         return Response({"status": "processed"}, status=202)
     
 

@@ -1,16 +1,8 @@
 import os
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-import driver.routing
 
+# Set the default settings module for the 'vms' project
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vms.settings')
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            driver.routing.websocket_urlpatterns
-        )
-    ),
-})
+# This handles standard HTTP and async requests without Channels overhead
+application = get_asgi_application()

@@ -18,14 +18,6 @@ const userColumns = (onEdit, onDelete) => [
     key: "username",
     render: (val) => <span className="font-medium text-ntc-dark">{val || 'N/A'}</span>
   },
-  {
-    header: "Full Name",
-    key: "first_name",
-    render: (_, row) => {
-      const full = `${row.first_name || ''} ${row.last_name || ''}`.trim();
-      return <span className="text-ntc-dark">{full || <span className="text-gray-400 italic">Not Provided</span>}</span>;
-    }
-  },
   { 
     header: "Address", 
     key: "address",

@@ -36,10 +36,10 @@ const Sidebar = ({ isSidebarOpen, isMobileOpen, setIsMobileOpen, sidebarcomp }) 
         ${isMobileOpen ? 'translate-x-0 w-62.5' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Sidebar Corporate Identity Header */}
-        <div className="h-15 flex items-center justify-between p-4 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
-          <img src={ntclogo} alt="NTC Logo" className="w-9 h-9  rounded-full object-cover transform scale-125" />
-          <span>NTC ENTERPRISE</span>
-        </div>
+      <div className="h-15 flex items-center gap-3 p-4 border-b border-white/10 font-bold text-lg tracking-wide whitespace-nowrap">
+        <img src={ntclogo} alt="NTC Logo" className="w-9 h-9 rounded-full object-cover transform scale-125" />
+        <span>NTC VMS</span>
+      </div>
 
         {/* 🟢 FIXED MINIMAL CHANGE: Moved navigation block container OUTSIDE of the map loop structure */}
         <nav className="py-5 flex-1 space-y-1">

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import { Navigation, Radio, MapPin, ArrowLeft, RefreshCw, Car, Clock, Activity } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import apiClient from '../../api/client'; // Adjust path to target your configured wrapper instance
-import { buildWebSocketUrl } from '../../api/runtime';
-import adminservices from '../../api/services/adminservices';
+import axios from 'axios';
+import { Centrifuge } from 'centrifuge';
+import { getApiBaseUrl, buildCentrifugoWebSocketUrl } from '../../api/runtime';
 import L from 'leaflet';
 
 // 🐛 Leaflet Webpack/Vite Asset Reference Patch Configuration
@@ -17,6 +17,24 @@ let DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
+
+const trackingApi = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: 20000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+trackingApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
 
 // Sub-component to seamlessly shift and center map perspective when coordinates change
 function MapRecenter({ position }) {
@@ -41,6 +59,9 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
   const [routeTrail, setRouteTrail] = useState([]); // Format: [[lat, lon], ...]
   const [loading, setLoading] = useState(true);
   const [telemetryMetaData, setTelemetryMetaData] = useState({ speed: 0, lastPing: 'Never' });
+  const [connectionActive, setConnectionActive] = useState(false);
+  const [tripCompleted, setTripCompleted] = useState(false);
+  const [tripCompletedMessage, setTripCompletedMessage] = useState('Trip completed');
 
   // List states for selection view when no dispatchId is selected
   const [activeDispatches, setActiveDispatches] = useState([]);
@@ -50,14 +71,27 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
   const fetchActiveDispatches = async () => {
     setFetchingDispatches(true);
     try {
-      const data = await adminservices.adminDispatchList();
-      setActiveDispatches(data || []);
+      const response = await trackingApi.get('/api/driver/admindispatchlist/');
+      const data = Array.isArray(response.data) ? response.data : [];
+      setActiveDispatches(data);
     } catch (err) {
       console.error("Error loading active dispatches:", err);
     } finally {
       setFetchingDispatches(false);
     }
   };
+
+  useEffect(() => {
+    if (!tripCompleted) {
+      return undefined;
+    }
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate('/dashboard/admin/livetracking');
+    }, 1800);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [tripCompleted, navigate]);
 
   useEffect(() => {
     if (!dispatchId) {
@@ -69,45 +103,140 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
     setLoading(true);
     setCurrentPosition(null);
     setRouteTrail([]);
+    setConnectionActive(false);
+    setTripCompleted(false);
+    setTripCompletedMessage('Trip completed');
 
-    // 1. Recover preceding vehicle path records from PostgreSQL JSONField on initialization
-    apiClient.get(`/api/driver/tracking/history/${dispatchId}/`)
-      .then((response) => {
-        const coords = response.data.coordinates;
-        if (coords && coords.length > 0) {
-          setRouteTrail(coords);
-          setCurrentPosition(coords[coords.length - 1]); // Locate current marker at latest known node
-          setTelemetryMetaData(prev => ({ ...prev, lastPing: new Date().toLocaleTimeString() }));
+    let isMounted = true;
+    let refreshInterval = null;
+    let centrifugo = null;
+    let subscription = null;
+    let completionHandled = false;
+
+    const finishTrip = (message = 'Trip completed') => {
+      if (completionHandled || !isMounted) {
+        return;
+      }
+
+      completionHandled = true;
+      setTripCompletedMessage(message);
+      setTripCompleted(true);
+      setConnectionActive(false);
+      setLoading(false);
+
+      if (refreshInterval) {
+        window.clearInterval(refreshInterval);
+      }
+
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+
+      if (centrifugo) {
+        centrifugo.disconnect();
+      }
+    };
+
+    const syncTrackingHistory = async () => {
+      try {
+        const [historyResponse, activeDispatchResponse] = await Promise.all([
+          trackingApi.get(`/api/driver/tracking/history/${dispatchId}/`),
+          trackingApi.get('/api/driver/admindispatchlist/'),
+        ]);
+
+        const coords = historyResponse.data.coordinates || [];
+        const activeDispatches = Array.isArray(activeDispatchResponse.data) ? activeDispatchResponse.data : [];
+        const activeDispatch = activeDispatches.find((item) => String(item.id) === String(dispatchId));
+
+        if (!isMounted) {
+          return;
         }
+
+        if (!activeDispatch || activeDispatch.dispatch_status !== 'IN_PROGRESS') {
+          finishTrip('Trip completed');
+          return;
+        }
+
+        if (coords.length > 0) {
+          setRouteTrail(coords);
+          setCurrentPosition(coords[coords.length - 1]);
+          setTelemetryMetaData((prev) => ({
+            ...prev,
+            lastPing: new Date().toLocaleTimeString(),
+          }));
+        }
+
         setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
         console.error("Error retrieving historical dispatch route layout:", error);
         setLoading(false);
-      });
+      }
+    };
 
-    // 2. Establish live WebSocket communication line targeting your Daphne ASGI server channels
-    const ws = new WebSocket(buildWebSocketUrl(`/ws/tracking/${dispatchId}/`));
+    // 1. Recover preceding vehicle path records from PostgreSQL JSONField on initialization
+    syncTrackingHistory();
+    refreshInterval = window.setInterval(syncTrackingHistory, 5000);
 
-    ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
+    // 2. Establish live Centrifugo communication line targeting the dispatch tracking channel
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    centrifugo = new Centrifuge(buildCentrifugoWebSocketUrl(), {
+      token,
+    });
+    subscription = centrifugo.newSubscription(`tracking:dispatch_${dispatchId}`);
+
+    centrifugo.on('connected', () => setConnectionActive(true));
+    centrifugo.on('disconnected', () => setConnectionActive(false));
+
+    subscription.on('publication', (ctx) => {
+      const payload = ctx.data || {};
+      if (typeof payload.lat !== 'number' || typeof payload.lon !== 'number') {
+        return;
+      }
+
       const incomingLocation = [payload.lat, payload.lon];
 
-      console.log("🛰️ Live Tracking Broadcast Received via WebSocket:", incomingLocation);
+      console.log("🛰️ Live Tracking Broadcast Received via Centrifugo:", incomingLocation);
 
       // Extend state trail limits dynamically
       setCurrentPosition(incomingLocation);
-      setRouteTrail((prevTrail) => [...prevTrail, incomingLocation]);
+      setRouteTrail((prevTrail) => {
+        const lastPoint = prevTrail[prevTrail.length - 1];
+        if (lastPoint && lastPoint[0] === incomingLocation[0] && lastPoint[1] === incomingLocation[1]) {
+          return prevTrail;
+        }
+        return [...prevTrail, incomingLocation];
+      });
       setTelemetryMetaData({
         speed: payload.speed || 'N/A',
         lastPing: new Date().toLocaleTimeString()
       });
-    };
+    });
 
-    ws.onerror = (err) => console.error("Tracking channel pipeline dropped:", err);
+    subscription.subscribe();
+    centrifugo.connect();
 
     // 🧼 Disengage connection stream cleanly when leaving monitoring panel layout
-    return () => ws.close();
+    return () => {
+      isMounted = false;
+      if (refreshInterval) {
+        window.clearInterval(refreshInterval);
+      }
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+      if (centrifugo) {
+        centrifugo.disconnect();
+      }
+    };
   }, [dispatchId]);
 
   const handleBack = () => {
@@ -225,6 +354,26 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
     );
   }
 
+  if (tripCompleted) {
+    return (
+      <main className="flex-1 p-6 overflow-y-auto bg-ntc-gray flex items-center justify-center">
+        <div className="max-w-lg w-full bg-white rounded-xl shadow-sm border border-gray-100 p-10 text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Activity size={32} />
+          </div>
+          <h1 className="text-2xl font-black text-ntc-dark tracking-tight">Trip completed</h1>
+          <p className="text-sm text-ntc-muted">{tripCompletedMessage}. Returning to the tracking dashboard now.</p>
+          <button
+            onClick={handleBack}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            Back to Tracking Dashboard
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-ntc-gray text-ntc-muted font-semibold tracking-wide">
@@ -260,8 +409,8 @@ export default function ManagerTrackingPage({ dispatchId: propDispatchId, onBack
 
         {/* Live Signal Status Badge */}
         <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 font-bold text-xs px-4 py-2 rounded-full border border-emerald-200 uppercase tracking-wider self-start sm:self-auto shadow-xs">
-          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
-          Live Feed Active
+          <span className={`w-2.5 h-2.5 rounded-full ${connectionActive ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`}></span>
+          {connectionActive ? 'Live Feed Active' : 'Connecting Feed...'}
         </div>
       </div>
 

@@ -134,7 +134,18 @@ const adminservices = {
             console.error(`Error deleting user profile for user ID #${userId}:`, error);
             throw error;
           }
-        }
+        },
+
+
+        //branch services
+        addBranch: async (branchData) => {
+          try {
+            const response = await apiClient.post('/api/branch/add/', branchData);
+            return response.data;
+          } catch (error) {
+            console.error('Error adding branch:', error);
+            throw error;
+          }},
 
 
 

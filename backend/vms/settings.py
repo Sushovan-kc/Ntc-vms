@@ -41,7 +41,6 @@ CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -143,24 +142,19 @@ USE_I18N = True
 USE_TZ = True
 
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
-
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": config("REDIS_URL", default="redis://redis:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
 
+# 3. Raw REDIS_CLIENT Engine (Fixed connection for route tracking logging)
 REDIS_CLIENT = redis.Redis(
-    host="127.0.0.1",
+    host=config("REDIS_HOST", default="redis"),  # Points to 'redis' container
     port=6379,
     db=0,
     decode_responses=True,
@@ -218,3 +212,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # The URL prefix the frontend uses to request the images
 MEDIA_URL = '/media/'
+
+CENTRIFUGO_API_URL = config('CENTRIFUGO_API_URL', default='http://centrifugo:8000/api')
+CENTRIFUGO_API_KEY = config('CENTRIFUGO_API_KEY')
+

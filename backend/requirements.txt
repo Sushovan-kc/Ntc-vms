@@ -1,7 +1,7 @@
 Django==6.0.5
-channels==4.3.2
-channels-redis==4.3.0
-daphne==4.2.2
+# channels==4.3.2
+# channels-redis==4.3.0
+# daphne==4.2.2
 djangorestframework==3.17.1
 djangorestframework-simplejwt==5.5.1
 django-cors-headers==4.9.0
@@ -16,6 +16,7 @@ billiard==4.2.4
 kombu==5.6.2
 vine==5.1.0
 python-decouple==3.8
+cent==4.0.0
 
 
 

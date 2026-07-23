@@ -16,3 +16,28 @@ export function buildWebSocketUrl(pathname) {
 
   return baseUrl.toString();
 }
+
+export function buildCentrifugoWebSocketUrl(pathname = '/connection/websocket') {
+  const configuredUrl = import.meta.env.VITE_CENTRIFUGO_WS_URL?.trim() || import.meta.env.VITE_CENTRIFUGO_URL?.trim();
+  const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+
+  if (configuredUrl) {
+    const baseUrl = new URL(configuredUrl, window.location.origin);
+
+    if (baseUrl.protocol === 'http:') {
+      baseUrl.protocol = 'ws:';
+    } else if (baseUrl.protocol === 'https:') {
+      baseUrl.protocol = 'wss:';
+    }
+
+    if (!baseUrl.pathname || baseUrl.pathname === '/') {
+      baseUrl.pathname = normalizedPathname;
+    }
+
+    baseUrl.search = '';
+    baseUrl.hash = '';
+    return baseUrl.toString();
+  }
+
+  return new URL(`ws://localhost:8010${normalizedPathname}`).toString();
+}
